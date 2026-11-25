@@ -3,17 +3,16 @@
 > The first thing a new agent reads after `AGENTS.md`. Keep it short and true. Owned by the Orchestrator.
 
 - **Phase:** UNINITIALIZED   <!-- UNINITIALIZED → Active → Maintenance -->
-- **Last updated:** {{DATE}} by <agent / profile>
+- **Last updated:** 2026-11-25 by Claude
 - **Branch in use:** `main`
 
 ## Summary
 
-{{DESCRIPTION}}
-<2-3 lines: where the project stands right now.>
+ALEPH task 6: Plan-Do-See diary (plan/do/see data linked, persisted in a server DB, no login). Working in loop mode (ADR 0002). No code yet; `{{...}}` placeholders in AGENTS.md are still open.
 
 ## Next step
 
-<The single most important next action. Specific enough that a stranger could start it.>
+Human throws the next chunk (candidates: real plan to track, table design, account signups).
 
 ## In flight
 
@@ -22,6 +21,19 @@
 | — | — | — | — | — |
 
 State: `planning` · `awaiting approval` · `implementing` · `in review` · `fixing` · `blocked` · `ready to merge`
+
+## Decision log
+
+- 2026-11-25: loop mode instead of orchestrator delegation (ADR 0002). Why: solo learning project; human conceives, agent vets then builds.
+- 2026-11-25: soft update and soft delete (new version row, old row `useYN='N'`) instead of UPDATE/DELETE. Why: keeps edit history. Duplicate completion is blocked by a UNIQUE constraint.
+
+## Parked / undecided
+
+- Stack is only a proposal: Next.js (React) + Vercel Hobby + Neon Free + plain SQL. Not confirmed.
+- Signups (Vercel, Neon) not done; check whether Neon asks for a card.
+- Which real plan the human will track (workout / study / work / game practice / ALEPH).
+- Table layout (plan versions, todo, run record, completion record; retro computed on read).
+- Placeholders and TBD commands in AGENTS.md; `docs/agents/ROLES.md` is stale.
 
 ## Blockers and questions for the human
 

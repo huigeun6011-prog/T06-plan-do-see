@@ -3,8 +3,8 @@
 Single source of truth for every AI agent in this repo (Claude Code, Codex, Antigravity, …).
 `CLAUDE.md` only points here. Talk to the human in the language they use; write repo files in English unless told otherwise.
 
-> **Not bootstrapped?** If `docs/STATUS.md` says `Phase: UNINITIALIZED`, stop and follow `docs/BOOTSTRAP.md` first.
-> After bootstrap, delete this callout.
+> **Loop mode (ADR 0002):** this repo is developed in a human-AI loop (§4). The full `docs/BOOTSTRAP.md` ritual is not run;
+> `{{...}}` placeholders and `TBD` commands are filled in one confirmed chunk at a time. Delete this callout once none remain.
 
 ## 1. Cold start (every new session, every agent)
 
@@ -12,7 +12,7 @@ Single source of truth for every AI agent in this repo (Claude Code, Codex, Anti
 2. Read `docs/STATUS.md`: current state, work in flight, next step, blockers. (Reviewers skip this: they get only the diff and the plan, to stay independent.)
 3. Run `git status`, `git log -10 --oneline`, `git worktree list`. If they disagree with STATUS.md, **trust git**, then fix STATUS.md.
 4. Read `docs/PROJECT.md` (purpose/scope) and `docs/ARCHITECTURE.md` (structure) only if your task needs them.
-5. Find your role (§3), then read your section in `docs/agents/ROLES.md`.
+5. Work in loop mode (§3-§4). `docs/agents/ROLES.md` describes the older delegation model and does not apply unless the human asks for it.
 
 ## 2. Project snapshot
 
@@ -25,34 +25,25 @@ Single source of truth for every AI agent in this repo (Claude Code, Codex, Anti
 
 A command that does not apply to this project (for example lint for a novel) is written `N/A`; skip it, do not invent one.
 
-## 3. Roles
+## 3. Roles (loop mode)
 
-You are the **Orchestrator** unless your prompt assigns another role. The Orchestrator is the agent the human talks to (Claude Code or Codex). Worker roles are launched through Paseo agent profiles.
+- **Human:** conceives, decides, confirms. Throws ideas one chunk at a time.
+- **Agent (you):** vets each chunk, implements confirmed ones, verifies, reports, keeps docs current. You write the code yourself; no Planner/Implementer/Reviewer delegation unless the human asks.
 
-| Role | Does | Must not |
-|---|---|---|
-| Orchestrator | Talks to the human, plans the work split, delegates, integrates, keeps docs current | Write non-trivial code itself |
-| Planner | Architecture, root-cause analysis, option comparison → a plan | Edit code |
-| Implementer | Builds from an approved plan, fixes bugs, makes tests pass | Change scope or the plan |
-| UI | Components, layout, styling, visual polish | Touch business logic or API contracts |
-| Reviewer (Claude or Codex profile) | Independent review of a diff, by a different provider than its author | Edit anything |
-| Free worker | Narrow, reversible chores (exploration, docs, draft tests, boilerplate) | Run outside a worktree, orchestrate, or merge |
+## 4. The loop
 
-Details, profile settings and report formats: `docs/agents/ROLES.md`, `docs/agents/HANDOFF.md`.
+1. **Throw:** the human states one chunk.
+2. **Vet:** judge it for realism, feasibility, better alternatives and conflicts with the ALEPH task 6 requirements. Verdict: accept / partially accept / reject / other opinion, with reasons. Change no files in this step.
+3. **Discuss:** settle disagreements together. Unconfirmed items stay in STATUS.md "Parked / undecided", not in code.
+4. **Confirm:** only an explicit confirmation from the human ("반영해" or similar) starts step 5.
+5. **Apply:** implement everything in the confirmed chunk (code, tests, docs), run the tests, commit.
+6. **Report:** what changed, what you actually ran, what is left. Then back to 1.
 
-## 4. Orchestrator protocol
-
-1. Clarify only what blocks you (max 3 questions).
-2. Check Paseo agent profiles and their notes before delegating. If Paseo tools are not enabled, tell the human.
-3. **Trivial change** (one file, a few lines, no behavior risk): do it yourself, run tests, log it in STATUS.md.
-4. **Anything else:** Planner → save plan to `docs/plans/` → **human approves** → Implementer (or UI) → Reviewer on the diff (different provider than the author; see `docs/agents/ROLES.md`) → fix loop → docs → ask the human before merging to the main branch.
-5. Every delegation prompt is self-contained (use the template in `docs/agents/HANDOFF.md`). Workers do not see this conversation.
-6. One Paseo workspace with worktree isolation per independent task. Never let two agents edit the same worktree at once.
-7. Free worker: worktree only, never give it Paseo tools, never make it an orchestrator, and review its output before using it.
-8. Fix loop: at most 2 Reviewer rounds. If still failing, stop and bring the problem to the human.
-9. **Cost:** use the cheapest profile that fits. Do not introduce a more expensive model than the profiles define without asking the human. If a provider is rate-limited, tell the human before swapping.
-10. Update `docs/STATUS.md` every time a delegate is launched or returns, not only at the end. Edit `STATUS.md` and number new plans/ADRs only in the main workspace, never inside a task worktree, so branches do not diverge.
-11. After a Reviewer finishes, check its worktree has no changes (`git status`). Not every provider can be read-only; discard any edit a Reviewer made.
+- Size of a chunk: whatever the human can say in one sentence.
+- Every confirmed decision gets one line in STATUS.md "Decision log" (what + why).
+- Hard-to-reverse decisions also get an ADR (§5). Ask the human before merging to `main` or deploying; signups, accounts and secrets are the human's to handle.
+- "Deployable" is done when the ALEPH task 6 completion checklist passes and every submitted URL opens in a fresh private window without login (T06-C01).
+- Optional: one independent review right before deployment.
 
 ## 5. Rules for all agents
 
@@ -72,19 +63,16 @@ Docs are part of Definition of Done. A stale doc is a bug.
 
 | Event | Update |
 |---|---|
-| Delegate launched/returned, session ends, handoff | `docs/STATUS.md` |
-| Plan produced | `docs/plans/NNNN-slug.md` |
-| Review finished | One-line result in the plan's "Review log" |
+| Chunk confirmed or applied, session ends, handoff | `docs/STATUS.md` |
 | Structure, components or conventions changed | `docs/ARCHITECTURE.md` |
 | Hard-to-reverse decision made | `docs/decisions/NNNN-slug.md` |
 | Scope or priorities changed | `docs/ROADMAP.md` (and `docs/PROJECT.md` if scope) |
 
-All project docs (`STATUS.md`, `ARCHITECTURE.md`, `ROADMAP.md`, `PROJECT.md`, plans, ADRs) are written by the Orchestrator, only in the main workspace. Workers never edit them: they list what must change under "DOCS TO UPDATE" in their final report, and the Orchestrator folds it in.
+The agent writes all project docs (`STATUS.md`, `ARCHITECTURE.md`, `ROADMAP.md`, `PROJECT.md`, ADRs) when a chunk is applied.
 
 ## 7. Definition of done
 
-- Behavior matches the plan's done-criteria.
+- Behavior matches the confirmed chunk.
 - Tests pass; lint is clean (or failures are explained).
-- Reviewer has no open high/medium findings.
 - Docs updated per §6; STATUS.md reflects reality.
-- Work is committed on its branch; nothing important lives only in a worktree's uncommitted state.
+- Work is committed; nothing important lives only in uncommitted state.
