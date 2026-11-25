@@ -1,0 +1,25 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Dependencies and build output
+node_modules/
+.venv/
+venv/
+__pycache__/
+*.pyc
+dist/
+build/
+coverage/
+*.log
+
+# Local agent state
+.claude/settings.local.json
