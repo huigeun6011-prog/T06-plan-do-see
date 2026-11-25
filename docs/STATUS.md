@@ -26,6 +26,7 @@ State: `planning` · `awaiting approval` · `implementing` · `in review` · `fi
 
 - 2026-11-25: loop mode with delegation (ADR 0002). Why: solo learning project; human conceives, Orchestrator vets and writes docs, Implementer/UI build, Reviewer on demand, Free worker off by default.
 - 2026-11-25: soft update and soft delete (new version row, old row `useYN='N'`) instead of UPDATE/DELETE. Why: keeps edit history. Duplicate completion is blocked by a UNIQUE constraint.
+- 2026-11-25: done = all card 1-5 pass criteria and the completion checklist met, plus a final Reviewer run with no open high/medium findings; the Orchestrator separately verifies live behavior. Why: an independent reviewer judges severity better than a fixed list.
 
 ## Parked / undecided
 

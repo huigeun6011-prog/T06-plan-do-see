@@ -48,7 +48,9 @@ Profile settings and report formats: `docs/agents/ROLES.md`, `docs/agents/HANDOF
 - Cost: use the cheapest profile that fits; do not use a more expensive model than the profiles define without asking.
 - Every confirmed decision gets one line in STATUS.md "Decision log" (what + why). Update STATUS.md whenever a worker is launched or returns.
 - Hard-to-reverse decisions also get an ADR (§5). Ask the human before merging to `main` or deploying; signups, accounts and secrets are the human's to handle.
-- "Deployable" is done when the ALEPH task 6 completion checklist passes and every submitted URL opens in a fresh private window without login (T06-C01).
+- **Done** = all pass criteria of ALEPH task 6 cards 1-5 and its completion checklist are met, and a final Reviewer run (near the end) leaves no open high/medium findings.
+  - Give the Reviewer these focus areas: data loss or duplication, wrong aggregates, XSS or secret exposure, core flow (plan -> todo -> run -> retro) blocked.
+  - The Reviewer reads code only. The Orchestrator also verifies and reports: opens in a fresh private window without login (T06-C01), data survives a refresh, double-clicking complete leaves one record.
 
 ## 5. Rules for all agents
 
