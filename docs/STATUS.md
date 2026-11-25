@@ -8,7 +8,7 @@
 
 ## Summary
 
-ALEPH task 6: Plan-Do-See diary (plan/do/see data linked, persisted in a server DB, no login). Working in loop mode (ADR 0002). No code yet; `{{...}}` placeholders in AGENTS.md are still open.
+ALEPH task 6: Plan-Do-See diary (plan/do/see data linked, persisted in a server DB, no login). Working in loop mode with delegation (ADR 0002). Paseo profiles checked: all 6 exist. No code yet; `{{...}}` placeholders in AGENTS.md are still open.
 
 ## Next step
 
@@ -24,7 +24,7 @@ State: `planning` · `awaiting approval` · `implementing` · `in review` · `fi
 
 ## Decision log
 
-- 2026-11-25: loop mode instead of orchestrator delegation (ADR 0002). Why: solo learning project; human conceives, agent vets then builds.
+- 2026-11-25: loop mode with delegation (ADR 0002). Why: solo learning project; human conceives, Orchestrator vets and writes docs, Implementer/UI build, Reviewer on demand, Free worker off by default.
 - 2026-11-25: soft update and soft delete (new version row, old row `useYN='N'`) instead of UPDATE/DELETE. Why: keeps edit history. Duplicate completion is blocked by a UNIQUE constraint.
 
 ## Parked / undecided
