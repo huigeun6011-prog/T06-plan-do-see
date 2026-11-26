@@ -85,6 +85,11 @@ State: `planning` · `awaiting approval` · `implementing` · `in review` · `fi
 - Whether a Maple boss routine counts as "game practice" for card 1 is the author's reading; ask the instructor if in doubt.
 - Delete the connection check page and the `ping` table once the real app exists.
 - Character images and boss icons: the human brings them (home or tomorrow); decide where the files live (repo versus external address) and whether a Nexon Open API key is needed.
+- UI feedback from the human (2026-11-26), to be applied when the screens are wired (nothing changed yet):
+  1. Cumulative tiles (hunting 6/6): today a click only adds one. Wanted: a row of boxes (e.g. six squares) that the user clicks to set the count, several at once, then confirms (확정). Backend fit: `completeTodo` SETS that day's units; boxes filled by earlier days are locked, today's boxes are editable, confirm sends units = clicked total minus units from other days (clamped at 0).
+  2. A character's tiles (12 or more bosses) must stay on ONE line unless the screen is narrow: narrower tiles and a wider card on PC (the current max width of 960 px forces a wrap).
+  3. Weekly content is not only bosses: 지하수로, 앵글러 컴퍼니 and similar missions also appear per character. They are ordinary weekly registrations (no difficulty word, so no badge); show them as a second tile row (mission) in the character card, mock data to include them; the human will list them with minutes.
+  4. Where to enter the time a boss took: the preview has no such input yet; the data side exists (`completeTodo` and `setRunDetails` take minutes, started and ended). Proposal: tapping a single tile completes it at once; a small `분` chip shows the entered minutes and opens an inline number field; cumulative tiles open the box editor with confirm; one small details popover can also hold the miss reason.
 
 ## Blockers and questions for the human
 
