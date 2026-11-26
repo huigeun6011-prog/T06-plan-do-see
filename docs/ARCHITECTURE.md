@@ -49,5 +49,5 @@ Browser -> Vercel (Next.js server code) -> Neon Postgres over HTTP (`@neondataba
 | Next.js, React, TypeScript | App framework with server code in one project | ADR 0003 |
 | `@neondatabase/serverless` | Postgres driver for the serverless runtime (HTTP) | ADR 0003, chosen by Implementer per Neon guidance |
 | Neon (Postgres) | Server database | ADR 0003 |
-| Vercel (Hobby) | Hosting; deployed with the Vercel CLI, no Git integration yet | ADR 0003 |
+| Vercel (Hobby) | Hosting; connected to the GitHub repo, a push to `main` deploys to production | ADR 0003 |
 | Vitest | Tests | ADR 0003 |

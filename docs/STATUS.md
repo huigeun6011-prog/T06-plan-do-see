@@ -12,7 +12,7 @@ ALEPH task 6: Plan-Do-See diary (plan/do/see data linked, persisted in a server 
 
 ## Next step
 
-1. Human sends the doping table (from home) and confirms the table design direction (see Parked).
+1. Human sends the doping table (at home, around 18:00).
 2. Orchestrator sends the core table design to Planner, then the core build to Implementer.
 2. Human sends the doping table (name, duration, meso price, coin cost) from home.
 3. Orchestrator sends the core table design to Planner.
@@ -46,16 +46,17 @@ State: `planning` · `awaiting approval` · `implementing` · `in review` · `fi
 - 2026-11-26: connection check page built by Implementer (`3c8519a` on `feat/db-ping`). Orchestrator re-ran `npm test` (6 passed) and `npm run build` (passed), read the diff (parameterized queries, server-only connection string, notes rendered as text, no secrets in the tree). Implementer reported a local save and restart check against Neon. Driver: `@neondatabase/serverless` over HTTP. One smoke-test row remains in the `ping` table. No Reviewer run: throwaway code.
 - 2026-11-26: workers may use Aside only to read public documentation; they must not open or read the human's signed-in tabs or copy tokens or connection strings. Why: Aside drives the human's own browser. The human set the default Aside profile to the connected one.
 - 2026-11-26: merged to `main` and pushed to GitHub with the human's OK (`ef09043`). Vercel project `plan-do-see-diary` created and deployed with the Vercel CLI (no Git integration: the Vercel account has no GitHub login connection yet). `DATABASE_URL` stored as a Production secret, taken from `.env.local` without printing it. Production URL: https://plan-do-see-diary-six.vercel.app . Verified without cookies: GET 200, POST saved a note, it was listed again, a markup note came back escaped, a blank note was rejected (303 to the error page), and the first row came from the Implementer's local run, so both hit the same Neon database. The deployment-specific URL returns 302 (Vercel protection); the production URL is open.
+- 2026-11-26: the human checked the deployed page in a private window: a saved note was still there after a refresh. Vercel project connected to the GitHub repo (`vercel git connect`): a push to `main` now deploys to production. The human enabled 2FA on Vercel. The human did not press Import in the Vercel UI (it would have created a duplicate project).
+- 2026-11-26: one plan per week; the character is a todo attribute. Why: the human's choice; filtering covers the per-character view.
+- 2026-11-26: hunting is one weekly todo with a target count (6 or more per week) that accumulates, not seven daily todos. Each hunt is one run record, at most one per todo per day (unique on todo and Seoul date), which also blocks double-click duplicates. The todo counts as done at 6. Expected minutes of such a todo = minutes per unit x target. Why: the human only needs 6 hunts a week and often skips days.
+- 2026-11-26: the reward field holds the crystal price only for now; doping cost is not subtracted yet. Why: the human finds the doping cost hard to attribute; revisit when the doping table arrives. This narrows the earlier net-meso decision.
 
 ## Parked / undecided
 
 - Doping table is missing: name, duration, meso price, coin cost.
-- Table layout (plan versions, todo, run record, completion record; retro computed on read). Open points: one plan per week with the character as a todo attribute (leaning) versus one plan per character; daily 30-minute hunting as one todo per day (proposed, not confirmed).
-- What goes into the reward field: net of doping cost or crystal price only. The tool reads the value as entered (proposal).
+- Table layout (plan versions, todo with target count, run record, completion record; retro computed on read): to be designed by Planner after the doping table arrives.
 - Auto clear-time: samples needed (waiting room, in-battle timer, clear screen for a few bosses; game resolution, window mode). OCR library choice needs an ADR.
 - Whether a Maple boss routine counts as "game practice" for card 1 is the author's reading; ask the instructor if in doubt.
-- Vercel Git integration needs a GitHub login connection on the Vercel account (human, in the browser); until then every deploy is `vercel deploy --prod` from the Orchestrator.
-- Check in a real private browser window once (T06-C01); only cookie-less requests were tested so far.
 - Delete the connection check page and the `ping` table once the real app exists.
 
 ## Blockers and questions for the human
