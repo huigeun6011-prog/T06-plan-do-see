@@ -16,7 +16,7 @@ Single source of truth for every AI agent in this repo (Claude Code, Codex, Anti
 - **What:** Plan-Do-See diary (ALEPH task 6, text in `docs/TASK.md`): plan, todo, run record and retro linked in a server DB, no login. First real data: the owner's weekly MapleStory boss routine. Details in `docs/PROJECT.md`.
 - **Stack:** Next.js (React, TypeScript) on Vercel, Neon Postgres, plain SQL with parameterized queries (ADR 0003)
 - **Install:** `npm ci`
-- **Test:** `npm test` (Vitest)
+- **Test:** `npm test` (Vitest). Run it in a worktree whose `.env.local` has the `dev` and `test` addresses and the branch markers; it refuses in the main folder (production).
 - **Lint/format:** `N/A` for now; the type check runs inside `npm run build`
 - **Run:** `npm run dev` (local); `npm run build` then `npm start` for a production run. Needs `.env.local` with `DATABASE_URL` (see `.env.example`).
 

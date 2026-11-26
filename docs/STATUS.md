@@ -12,9 +12,10 @@ ALEPH task 6: Plan-Do-See diary (plan/do/see data linked, persisted in a server 
 
 ## Next step
 
-1. Implementer builds chunks 1-2 of `docs/plans/0001-core-schema.md` (schema on `dev` plus test helper, then Seoul time helpers); the Orchestrator reviews, then the human OKs the merge.
-2. Human sends the doping table and the boss lists when home (around 18:00).
-3. Next chunks 3-8 follow in the order of the plan; the AI recap (chunk 11) waits for the API key.
+1. Implementer builds chunk 3 (characters and registrations, no screens) on a new branch.
+2. Human sends UI direction (reference screenshots received: stacked numbered cards, character portrait, boss tiles, dark and light themes), then UI builds the screen shell.
+3. Human sends the doping table, boss lists and character images when home (18:00 or tomorrow).
+4. Chunks 4-8 follow in the order of the plan; the AI recap (chunk 11) waits for the API key.
 
 ## In flight
 
@@ -22,7 +23,7 @@ ALEPH task 6: Plan-Do-See diary (plan/do/see data linked, persisted in a server 
 |---|---|---|---|---|
 | DB connection check page (throwaway) | none; delegation prompt only | Implementer | `feat/db-ping` (`3c8519a`), workspace `wks_4bb427a12459055e` | merged to `main` (`ef09043`), deployed; worktree can be archived |
 | Core table design (no doping) | `docs/plans/0001-core-schema.md` | Planner | `docs/core-schema-plan`, workspace `wks_3be368cacaae8028` | done; worktree can be archived |
-| Core chunks 1-2: schema on `dev`, test helper, Seoul time helpers | `docs/plans/0001-core-schema.md` (section 8) | Implementer | `feat/core-schema`, workspace `wks_4c20089b9b84758d` | implementing |
+| Core chunks 1-2: schema on `dev`, test helper, Seoul time helpers | `docs/plans/0001-core-schema.md` (section 8) | Implementer | `feat/core-schema`, workspace `wks_4c20089b9b84758d` | merged to `main` (`9036d53`); worktree can be archived |
 
 State: `planning` · `awaiting approval` · `implementing` · `in review` · `fixing` · `blocked` · `ready to merge`
 
@@ -55,6 +56,7 @@ State: `planning` · `awaiting approval` · `implementing` · `in review` · `fi
 - 2026-11-26: retro improvement comes from an AI recap through the Anthropic API (ADR 0005): button only, one stored result per plan, daily cap, key only in server env, AI never computes numbers, apply actions limited to a whitelist, built last. The human has an API account and will buy usage; the key is not entered yet. A manual improvement line always works. This replaces the earlier idea of rule-based generation. Why: the human wants the AI to judge from the reasons; my earlier cost objection no longer applies, the abuse and key objections are handled by the cap and server-only key. Login comes in task 7.
 - 2026-11-26: neon branches `dev` and `test` created (`neon branches create`, no secrets printed). Development uses `dev`, tests use `test`; `production` holds real data. Expiry of the two branches is unverified. Why: tests and local runs must not touch real data.
 - 2026-11-26: the human treats the pass criteria as guidelines and may break them; the Orchestrator keeps judging what is right and may reject ideas. Improvement (T06-C33) is still designed in because it costs little.
+- 2026-11-26: chunks 1-2 built by Implementer (`feat/core-schema`, merged as `9036d53`): `db/schema.sql` (identical to the plan's DDL, applied to `dev` twice), `npm run db:apply`, a test-database helper, Seoul time helpers (`lib/time.ts`, fixed +09:00 offset). Orchestrator re-ran 50 tests and the build, ran the time tests under another time zone, and read the guard code. The schema script now refuses unless `.env.local` carries `NEON_BRANCH=dev` (default), `TEST_NEON_BRANCH=test` (tests) or `NEON_BRANCH=production` plus `--production` (`npm run db:apply:production`, never run yet). The main folder's `.env.local` is `production`, so DB scripts and tests refuse there. Driver facts: bigint comes back as string, text[] as string[], timestamptz as Date, date as a local-midnight Date (select `date::text`).
 
 ## Parked / undecided
 

@@ -1,6 +1,6 @@
 # 0001 — Core schema and build order
 
-- **Status:** approved by the human, 2026-11-26
+- **Status:** approved by the human, 2026-11-26; chunks 1-2 built and merged (`9036d53`), the DDL below ran unchanged on `dev` and `test`
 - **Author:** Planner (Claude), amended by the Orchestrator after the human's answers
 - **Related:** ADR 0003 (stack), ADR 0004 (data model), ADR 0005 (AI recap), `docs/TASK.md` (pass criteria T06-Cxx)
 

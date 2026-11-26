@@ -25,13 +25,15 @@ Update this file whenever structure, components or conventions change.
 
 | Component | Responsibility | Location |
 |---|---|---|
+| Schema and DB scripts | `db/schema.sql`, `scripts/apply-schema.mjs`, `scripts/schema.mjs` (branch guard), `tests/helpers/db.ts` | `db/`, `scripts/`, `tests/` |
+| Seoul time helpers | `todaySeoul`, `periodFor`, `nextPeriod`, `formatDeadline`, `parseDeadlineInput` (pure, fixed +09:00) | `lib/time.ts` |
 | Connection check page (throwaway) | Proves save and read against Neon from Vercel; delete when the real app exists | `app/page.tsx`, `app/ping/route.ts`, `app/note.ts`, `db/ping.ts`, `db/ping.sql` |
 
 The real app (plans, todos, run records, retro) is not built yet; see `docs/PROJECT.md` and `docs/ROADMAP.md`.
 
 ## Data model
 
-Five tables (`game_character`, `entry`, `plan`, `todo`, `run_record`) and the view `todo_state`; details in `docs/plans/0001-core-schema.md`, decision in ADR 0004. Versioned: `plan`, `entry`. Done state and retro numbers are derived. Not built yet; `db/ping.sql` is the only table in the database so far.
+Five tables (`game_character`, `entry`, `plan`, `todo`, `run_record`) and the view `todo_state`; details in `docs/plans/0001-core-schema.md`, decision in ADR 0004. Versioned: `plan`, `entry`. Done state and retro numbers are derived. The tables exist on the Neon `dev` and `test` branches; `production` still only has the `ping` table (apply with `npm run db:apply:production` right before the app uses them).
 
 ## Data flow
 
@@ -45,6 +47,8 @@ Browser -> Vercel (Next.js server code) -> Neon Postgres over HTTP (`@neondataba
 - Testing: Vitest in `tests/` (`npm test`); change behavior, add or update a test.
 - Branches: `feat/<slug>`, `fix/<slug>`, `docs/<slug>`; one worktree per branch. Merge to `main` only with the human's OK.
 - Secrets: `.env.local` and Vercel environment variables only; `.env*` is git-ignored except `.env.example`.
+- Neon branches: `production` (real data), `dev` (development), `test` (automated tests, reset by the tests). A worktree's `.env.local` holds `dev` and `test` addresses plus the markers `NEON_BRANCH=dev` and `TEST_NEON_BRANCH=test`; the main folder's file is `production`. The schema script and the DB tests refuse to run unless the markers match, so never run them in the main folder.
+- Driver: bigint ids arrive as strings, `text[]` as string arrays, timestamps as `Date`; dates must be selected as text (`date::text`) to avoid time-zone shifts.
 
 ## External dependencies
 
