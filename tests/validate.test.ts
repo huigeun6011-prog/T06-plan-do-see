@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { validateEntry, validateId, validateName, ValidationError } from "../lib/validate";
+import {
+  validateEntry, validateId, validateName, validatePlanDates, validatePlanFields, validateTodo, ValidationError,
+} from "../lib/validate";
 
 const base = {
   title: "Boss",
@@ -73,5 +75,64 @@ describe("registration validation", () => {
     for (const value of values) {
       expectInvalid(() => validateEntry({ ...base, [field]: value }), field);
     }
+  });
+});
+
+describe("plan validation", () => {
+  const fields = { title: "t", priority: 1, success_criteria: "s", expected_minutes: 0 };
+  const start = new Date("2026-11-25T15:00:00Z");
+  const end = new Date(start.getTime() + 1);
+
+  it("accepts the minimum and maximum field values and an exclusive end", () => {
+    expect(validatePlanFields(fields)).toEqual(fields);
+    const max = { title: "t".repeat(100), priority: 3, success_criteria: "s".repeat(500), expected_minutes: 2147483647 };
+    expect(validatePlanFields(max)).toEqual(max);
+    expect(validatePlanDates(start, end)).toEqual({ starts_at: start, ends_at: end });
+  });
+
+  it.each([
+    ["title", [" ", "t".repeat(101)]],
+    ["priority", [0, 4, 1.5]],
+    ["success_criteria", [" ", "s".repeat(501)]],
+    ["expected_minutes", [-1, 0.5, 2147483648]],
+  ])("rejects invalid %s", (field, values) => {
+    for (const value of values) expectInvalid(() => validatePlanFields({ ...fields, [field]: value }), field);
+  });
+
+  it("rejects invalid dates and ends that do not follow the start", () => {
+    expectInvalid(() => validatePlanDates(start.toISOString(), end), "starts_at");
+    expectInvalid(() => validatePlanDates(start, new Date(NaN)), "ends_at");
+    expectInvalid(() => validatePlanDates(start, start), "ends_at");
+    expectInvalid(() => validatePlanDates(end, start), "ends_at");
+  });
+});
+
+describe("todo validation", () => {
+  const fields = { title: "t", expected_minutes: 0 };
+
+  it("accepts the field boundaries and supplies the defaults", () => {
+    expect(validateTodo(fields)).toEqual({
+      ...fields, note: "", character_id: null, due_at: null, priority: 2, tags: [], target_count: 1,
+    });
+    const tags = [" x ", ...Array(9).fill("x".repeat(30))];
+    const due_at = new Date("2026-11-25T15:00:00Z");
+    const max = {
+      title: "t".repeat(200), note: "n".repeat(1000), character_id: "1", due_at, priority: 3,
+      tags, expected_minutes: 2147483647, target_count: 1000,
+    };
+    expect(validateTodo(max)).toEqual({ ...max, tags: tags.map((tag) => tag.trim()) });
+  });
+
+  it.each([
+    ["title", [" ", "t".repeat(201)]],
+    ["note", ["n".repeat(1001), null]],
+    ["character_id", ["0", 1]],
+    ["due_at", [new Date(NaN), "2026-11-26", null]],
+    ["priority", [0, 4, 1.5]],
+    ["tags", [Array(11).fill("tag"), [""], ["x".repeat(31)]]],
+    ["expected_minutes", [-1, 0.5, 2147483648]],
+    ["target_count", [0, 1001, 1.5]],
+  ])("rejects invalid %s", (field, values) => {
+    for (const value of values) expectInvalid(() => validateTodo({ ...fields, [field]: value }), field);
   });
 });

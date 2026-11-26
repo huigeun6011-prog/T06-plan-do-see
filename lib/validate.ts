@@ -6,6 +6,7 @@ export class ValidationError extends Error {
 }
 
 export type PeriodKind = "weekly" | "monthly";
+export type PlanKind = PeriodKind | "event";
 
 export interface EntryInput {
   title: string;
@@ -63,12 +64,14 @@ function validateReward(value: unknown): string {
   return String(integer(amount, "reward_meso", 0, Number.MAX_SAFE_INTEGER));
 }
 
-function validateTags(value: unknown): string[] {
+function validateTags(value: unknown, unique = false): string[] {
   if (!Array.isArray(value) || value.length > 10) {
     throw new ValidationError("tags", "Use up to 10 tags.");
   }
   const tags = Array.from(value, (tag) => text(tag, "tags", 1, 30));
-  if (new Set(tags).size !== tags.length) throw new ValidationError("tags", "Use each tag once.");
+  if (unique && new Set(tags).size !== tags.length) {
+    throw new ValidationError("tags", "Use each tag once.");
+  }
   return tags;
 }
 
@@ -94,8 +97,83 @@ export function validateEntry({
     doping: text(doping, "doping", 1, 100),
     memo: text(memo, "memo", 0, 500, false),
     target_count: integer(target_count, "target_count", 1, 1000),
-    tags: validateTags(tags),
+    tags: validateTags(tags, true),
     sort_order: validateSortOrder(sort_order),
     character_id: character_id === null ? null : validateId(character_id, "character_id"),
+  };
+}
+
+export type PlanFields = {
+  title: string;
+  priority: number;
+  success_criteria: string;
+  expected_minutes: number;
+};
+
+export interface EventPlanInput extends PlanFields {
+  starts_at: Date;
+  ends_at: Date;
+}
+
+export interface PlanEditInput extends PlanFields {
+  starts_at?: Date;
+  ends_at?: Date;
+}
+
+export interface TodoInput {
+  title: string;
+  note?: string;
+  character_id?: string | null;
+  due_at?: Date;
+  priority?: number;
+  tags?: string[];
+  expected_minutes: number;
+  target_count?: number;
+}
+
+export function validatePlanKind(value: unknown): PlanKind {
+  return value === "event" ? value : validatePeriodKind(value);
+}
+
+export function validateDate(value: unknown, field: string): Date {
+  if (value instanceof Date && Number.isFinite(value.getTime())) return value;
+  throw new ValidationError(field, "Use a valid date.");
+}
+
+export function validatePlanDates(startsAt: unknown, endsAt: unknown) {
+  const starts_at = validateDate(startsAt, "starts_at");
+  const ends_at = validateDate(endsAt, "ends_at");
+  if (ends_at <= starts_at) throw new ValidationError("ends_at", "End must be after start.");
+  return { starts_at, ends_at };
+}
+
+export function validatePlanFields(input: PlanFields): PlanFields {
+  return {
+    title: text(input.title, "title", 1, 100),
+    priority: integer(input.priority, "priority", 1, 3),
+    success_criteria: text(input.success_criteria, "success_criteria", 1, 500),
+    expected_minutes: integer(input.expected_minutes, "expected_minutes", 0, 2147483647),
+  };
+}
+
+export function validateTodo({
+  title,
+  note = "",
+  character_id = null,
+  due_at,
+  priority = 2,
+  tags = [],
+  expected_minutes,
+  target_count = 1,
+}: TodoInput) {
+  return {
+    title: text(title, "title", 1, 200),
+    note: text(note, "note", 0, 1000, false),
+    character_id: character_id === null ? null : validateId(character_id, "character_id"),
+    due_at: due_at === undefined ? null : validateDate(due_at, "due_at"),
+    priority: integer(priority, "priority", 1, 3),
+    tags: validateTags(tags),
+    expected_minutes: integer(expected_minutes, "expected_minutes", 0, 2147483647),
+    target_count: integer(target_count, "target_count", 1, 1000),
   };
 }
