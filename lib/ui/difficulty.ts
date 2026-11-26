@@ -9,6 +9,18 @@ const LEVELS: Record<string, { letter: string; tone: Tone }> = {
   익스트림: { letter: "X", tone: "red" },
 };
 
+function words(title: string): string[] {
+  return title.trim().split(/\s+/).filter(Boolean);
+}
+
 export function difficultyBadge(title: string): { letter: string; tone: Tone } | null {
-  return LEVELS[title.trim().split(/\s+/)[0]] ?? null;
+  const word = words(title)[0] ?? "";
+  return Object.hasOwn(LEVELS, word) ? LEVELS[word] : null;
+}
+
+// Title without its leading difficulty word; the full title when nothing else is left.
+export function displayName(title: string): string {
+  const w = words(title);
+  const rest = difficultyBadge(title) ? w.slice(1) : w;
+  return (rest.length ? rest : w).join(" ");
 }

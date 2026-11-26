@@ -1,3 +1,5 @@
+import { httpsSrc } from "../../lib/ui/imageSrc";
+
 // Image slot: an <img> only for https URLs, otherwise a generated placeholder. Size comes from CSS (--pd-icon), so a real image changes nothing.
 function hue(label: string): number {
   let h = 0;
@@ -5,10 +7,11 @@ function hue(label: string): number {
   return h;
 }
 
-export function IconTile({ src, label, round = false }: { src?: string; label: string; round?: boolean }) {
+export function IconTile({ src, label, round = false, size = 48 }: { src?: string; label: string; round?: boolean; size?: number }) {
   const cls = round ? "pd-icon pd-round" : "pd-icon";
-  if (src?.startsWith("https://")) {
-    return <img className={cls} src={src} alt="" title={label} referrerPolicy="no-referrer" />;
+  const url = httpsSrc(src);
+  if (url) {
+    return <img className={cls} src={url} alt="" title={label} width={size} height={size} loading="lazy" decoding="async" referrerPolicy="no-referrer" />;
   }
   // Placeholder skips the difficulty word so "노말 진힐라" shows 진, not 노.
   const word = label.trim().split(/\s+/).at(-1) ?? "";

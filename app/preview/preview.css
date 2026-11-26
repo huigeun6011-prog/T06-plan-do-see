@@ -1,16 +1,16 @@
 /* Scoped to .pd and html[data-theme]; the root app/styles.css stays untouched. */
-html[data-theme="dark"] { color-scheme: dark; }
-html[data-theme="light"] { color-scheme: light; }
-html[data-theme="dark"] body { background: #0b0b0b; }
-html[data-theme="light"] body { background: #fff; }
-
 .pd {
-  --bg: #fff; --card: #f2f2f2; --tile: #fff; --line: #cfcfcf; --fg: #111; --dim: #6b6b6b; --focus: #111;
-  --pd-icon: 48px;
+  --bg: #ffffff; --card: #f2f2f2; --tile: #ffffff; --line: #cfcfcf; --fg: #111111; --dim: #6b6b6b; --focus: #111111; --done: #177a50;
+  --pd-icon: 48px; color-scheme: light;
 }
-html[data-theme="dark"] .pd {
-  --bg: #0b0b0b; --card: #1c1c1c; --tile: #262626; --line: #333; --fg: #f5f5f5; --dim: #9a9a9a; --focus: #fff;
+.pd[data-theme="dark"] {
+  --bg: #0b0b0b; --card: #1c1c1c; --tile: #262626; --line: #333333; --fg: #f5f5f5; --dim: #9a9a9a; --focus: #ffffff; --done: #3ccf8e;
+  color-scheme: dark;
 }
+.pd .pd-sun { display: none; }
+.pd[data-theme="light"] .pd-sun { display: inline; }
+.pd[data-theme="light"] .pd-moon { display: none; }
+.pd-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
 .pd {
   min-height: 100vh; background: var(--bg); color: var(--fg);
   font-family: Pretendard, system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
@@ -47,13 +47,14 @@ html[data-theme="dark"] .pd {
   display: grid; justify-items: center; gap: 4px; min-width: 64px; min-height: 44px; padding: 8px 6px;
   border-radius: 16px; border: 1px solid var(--line); background: var(--tile);
 }
-.pd-tile[data-done="true"] { opacity: .5; }
+.pd-tile[data-done="true"] { border-color: var(--done); }
+.pd-tile[data-done="true"] .pd-icon { opacity: .45; }
 .pd-iconwrap { position: relative; display: inline-flex; }
-.pd-mark { position: absolute; right: -6px; bottom: -6px; min-width: 20px; padding: 0 5px; border-radius: 999px; background: #1fa971; color: #fff; font-size: .7rem; font-weight: 700; line-height: 20px; text-align: center; font-variant-numeric: tabular-nums; }
+.pd-mark { position: absolute; right: -6px; bottom: -6px; min-width: 20px; padding: 0 5px; border-radius: 999px; background: #177a50; color: #fff; font-size: .7rem; font-weight: 700; line-height: 20px; text-align: center; font-variant-numeric: tabular-nums; }
 .pd-meta { display: flex; align-items: center; gap: 4px; min-height: 18px; }
 .pd-badge { width: 18px; height: 18px; border-radius: 6px; font-size: .7rem; font-weight: 700; line-height: 18px; color: #fff; text-align: center; }
 .pd-badge[data-tone="gray"] { background: #6e6e6e; }
-.pd-badge[data-tone="teal"] { background: #0f8b8d; }
+.pd-badge[data-tone="teal"] { background: #0a7274; }
 .pd-badge[data-tone="pink"] { background: #c2417f; }
 .pd-badge[data-tone="dark"] { background: #3a3a3a; }
 .pd-badge[data-tone="red"] { background: #c0392b; }

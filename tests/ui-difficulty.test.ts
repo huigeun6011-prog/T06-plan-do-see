@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { difficultyBadge } from "../lib/ui/difficulty";
+import { difficultyBadge, displayName } from "../lib/ui/difficulty";
 
 describe("difficultyBadge", () => {
   it.each([
@@ -17,7 +17,24 @@ describe("difficultyBadge", () => {
     expect(difficultyBadge("")).toBeNull();
   });
 
-  it("ignores the word in the middle", () => {
+  it("ignores the word in the middle and inherited keys", () => {
     expect(difficultyBadge("진 하드 모드")).toBeNull();
+    expect(difficultyBadge("constructor 진힐라")).toBeNull();
+    expect(difficultyBadge("toString")).toBeNull();
+  });
+});
+
+describe("displayName", () => {
+  it("drops the leading difficulty word", () => {
+    expect(displayName("  노말   진힐라 ")).toBe("진힐라");
+  });
+  it("keeps titles without a difficulty word", () => {
+    expect(displayName("사냥")).toBe("사냥");
+    expect(displayName("constructor 진힐라")).toBe("constructor 진힐라");
+    expect(displayName("진 하드 모드")).toBe("진 하드 모드");
+  });
+  it("falls back to the full title", () => {
+    expect(displayName("노말")).toBe("노말");
+    expect(displayName("")).toBe("");
   });
 });
