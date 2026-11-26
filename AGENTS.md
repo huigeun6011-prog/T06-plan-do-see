@@ -17,7 +17,7 @@ Single source of truth for every AI agent in this repo (Claude Code, Codex, Anti
 ## 2. Project snapshot
 
 - **What:** Plan-Do-See diary (ALEPH task 6, text in `docs/TASK.md`): plan, todo, run record and retro linked in a server DB, no login. First real data: the owner's weekly MapleStory boss routine. Details in `docs/PROJECT.md`.
-- **Stack:** {{STACK}}
+- **Stack:** Next.js (React, TypeScript) on Vercel, Neon Postgres, plain SQL with parameterized queries (ADR 0003)
 - **Install:** `{{INSTALL_CMD}}`
 - **Test:** `{{TEST_CMD}}`
 - **Lint/format:** `{{LINT_CMD}}`

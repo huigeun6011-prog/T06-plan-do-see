@@ -8,11 +8,11 @@
 
 ## Summary
 
-ALEPH task 6: Plan-Do-See diary (plan/do/see data linked, persisted in a server DB, no login). Working in loop mode with delegation (ADR 0002). Paseo profiles checked: all 6 exist. Task text saved in `docs/TASK.md`. Domain and feature scope are settled (decision log); no code yet; stack, install/test/lint/run commands in AGENTS.md are still open.
+ALEPH task 6: Plan-Do-See diary (plan/do/see data linked, persisted in a server DB, no login). Working in loop mode with delegation (ADR 0002). Paseo profiles checked: all 6 exist. Task text saved in `docs/TASK.md`. Domain, feature scope and stack are settled (decision log, ADR 0003); no app code yet; install/test/lint/run commands in AGENTS.md are filled when the app exists.
 
 ## Next step
 
-1. Human confirms the stack and does the signups (Vercel, Neon).
+1. Orchestrator runs Neon setup (steps 1-3 of Neon's prompt) in the main folder, then sends the connection-check page to Implementer in a worktree.
 2. Human sends the doping table (name, duration, meso price, coin cost).
 3. Orchestrator sends the core table design to Planner.
 
@@ -40,11 +40,10 @@ State: `planning` · `awaiting approval` · `implementing` · `in review` · `fi
 - 2026-11-26: no "can I finish this week" forecast. Why: it needs daily available minutes typed in every day; the task does not require it.
 - 2026-11-26: build order: core (cards 1-5), overview per character, "today" suggestion, coin forecast. Why: the first two satisfy the task; the rest is the part the human wants to dig into and must not block it.
 - 2026-11-26: automatic clear-time measurement is planned for later, not now. Method: browser screen share of the game window, analysed in the browser, no frames sent to the server; the boss and difficulty come from the waiting-room map name and the time from the in-game timer. Needs sample screenshots or a recording first, then a spike. Manual entry stays as the fallback and both feed one run record. Why: the human wants full automation, accepts about one week, and does not want to rebuild an external service by hand. No scraping of maple-boss.com (its terms, article 7, forbid it).
+- 2026-11-26: stack confirmed (ADR 0003): Next.js (React) on Vercel Hobby, Neon Free Postgres only, plain SQL with parameters, no ORM. TypeScript, plain CSS and Vitest are Orchestrator defaults. Why: server-side layer keeps the connection string off the browser; SQL-level guarantees are what the task checks. Signups done (Neon asked for no card).
 
 ## Parked / undecided
 
-- Stack is only a proposal: Next.js (React) + Vercel Hobby + Neon Free + plain SQL. Not confirmed.
-- Signups (Vercel, Neon) not done; check whether Neon asks for a card.
 - Doping table is missing: name, duration, meso price, coin cost.
 - Table layout (plan versions, todo, run record, completion record; retro computed on read). Open points: one plan per week with the character as a todo attribute (leaning) versus one plan per character; daily 30-minute hunting as one todo per day (proposed, not confirmed).
 - What goes into the reward field: net of doping cost or crystal price only. The tool reads the value as entered (proposal).
