@@ -84,8 +84,14 @@ describe("run records", () => {
     await expect(uncompleteTodo(sql, todo.id, runDate)).resolves.toBe(true);
     await expect(uncompleteTodo(sql, todo.id, runDate)).resolves.toBe(false);
     await expect(listRuns(sql, todo.id)).resolves.toEqual([{ ...result.run, done: false }]);
-    await expect(getTodo(sql, todo.id)).resolves.toMatchObject({ done_n: 0, actual_minutes: 12, is_done: false });
+    await expect(getTodo(sql, todo.id)).resolves.toMatchObject({ done_n: 0, actual_minutes: 0, is_done: false });
+    const actualTotal = () => sql`
+      SELECT COALESCE(sum(actual_minutes), 0)::int AS actual_minutes
+      FROM todo_state WHERE plan_id = ${todo.plan_id}
+    `;
+    await expect(actualTotal()).resolves.toEqual([{ actual_minutes: 0 }]);
     await expect(completeTodo(sql, todo.id, dayOne)).resolves.toEqual(result);
+    await expect(actualTotal()).resolves.toEqual([{ actual_minutes: 12 }]);
     const updated = saved(await completeTodo(sql, todo.id, dayOne, { actual_minutes: 0, ended_at: null }));
     expect(updated.run).toEqual({ ...result.run, actual_minutes: 0 });
     await expect(completeTodo(sql, todo.id, dayOne, { started_at: day(1) }))
