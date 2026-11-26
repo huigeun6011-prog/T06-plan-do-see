@@ -1,5 +1,6 @@
 import { NeonDbError } from "@neondatabase/serverless";
 import { afterAll, beforeAll, beforeEach } from "vitest";
+import type { SqlClient } from "../../db/client";
 import { applySchema, connectSchemaDatabase } from "../../scripts/schema.mjs";
 
 export function useTestDatabase() {
@@ -18,9 +19,9 @@ export function useTestDatabase() {
   beforeAll(() => applySchema(sql), 30_000);
   beforeEach(reset, 30_000);
   afterAll(reset, 30_000);
-  return async (strings: TemplateStringsArray, ...values: unknown[]) => {
+  async function safeQuery<T>(query: Promise<T>): Promise<T> {
     try {
-      return await sql(strings, ...values);
+      return await query;
     } catch (error) {
       if (error instanceof NeonDbError && error.code) {
         throw Object.assign(new Error("Test query rejected by PostgreSQL."), {
@@ -30,5 +31,11 @@ export function useTestDatabase() {
       }
       throw new Error("Test query could not reach PostgreSQL.");
     }
-  };
+  }
+  return Object.assign(
+    (strings: TemplateStringsArray, ...values: unknown[]) => safeQuery(sql(strings, ...values)),
+    {
+      transaction: (queries: Parameters<SqlClient["transaction"]>[0]) => safeQuery(sql.transaction(queries)),
+    },
+  );
 }
