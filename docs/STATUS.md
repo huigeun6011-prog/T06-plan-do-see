@@ -26,6 +26,7 @@ ALEPH task 6: Plan-Do-See diary (plan/do/see data linked, persisted in a server 
 | Core chunks 1-2: schema on `dev`, test helper, Seoul time helpers | `docs/plans/0001-core-schema.md` (section 8) | Implementer | `feat/core-schema`, workspace `wks_4c20089b9b84758d` | merged to `main` (`9036d53`); worktree can be archived |
 | Core chunk 3: characters and registrations (no screens) | `docs/plans/0001-core-schema.md` (section 8) | Implementer | `feat/entries` (`15030dc`) in workspace `wks_4c20089b9b84758d` | reviewed and accepted by the Orchestrator (77 tests, build); not merged yet, waiting for the human's OK |
 | Core chunk 4: plans, generation, event plans, hand-made todos (no screens) | `docs/plans/0001-core-schema.md` (section 8) | Implementer | `feat/plans` (stacked on `feat/entries`), same workspace | implementing |
+| UI shell on `/preview` with mock data | prompt only (look, components, constraints) | UI | `feat/ui-shell`, workspace `wks_3256fb9c504da5f0` | implementing |
 
 State: `planning` · `awaiting approval` · `implementing` · `in review` · `fixing` · `blocked` · `ready to merge`
 
@@ -60,6 +61,7 @@ State: `planning` · `awaiting approval` · `implementing` · `in review` · `fi
 - 2026-11-26: the human treats the pass criteria as guidelines and may break them; the Orchestrator keeps judging what is right and may reject ideas. Improvement (T06-C33) is still designed in because it costs little.
 - 2026-11-26: chunks 1-2 built by Implementer (`feat/core-schema`, merged as `9036d53`): `db/schema.sql` (identical to the plan's DDL, applied to `dev` twice), `npm run db:apply`, a test-database helper, Seoul time helpers (`lib/time.ts`, fixed +09:00 offset). Orchestrator re-ran 50 tests and the build, ran the time tests under another time zone, and read the guard code. The schema script now refuses unless `.env.local` carries `NEON_BRANCH=dev` (default), `TEST_NEON_BRANCH=test` (tests) or `NEON_BRANCH=production` plus `--production` (`npm run db:apply:production`, never run yet). The main folder's `.env.local` is `production`, so DB scripts and tests refuse there. Driver facts: bigint comes back as string, text[] as string[], timestamptz as Date, date as a local-midnight Date (select `date::text`).
 - 2026-11-26: chunk 3 accepted (`feat/entries`): `db/characters.ts`, `db/entries.ts`, `db/client.ts`, `lib/validate.ts`. Deviation from the plan, accepted: `editEntry(sql, rootId, expectedVersionId, input)` takes the version id the caller read, and passes the UPDATE result to the INSERT inside the same transaction through `set_config(..., true)` (the HTTP batch cannot branch in JS). Five parallel edits gave one success and four conflicts; a failed insert rolls back the retirement. Edits take the full entry, not a patch. DB test files run serially (`vitest.config.mjs`) because they share the `test` branch. Follow-up to consider: a registration reorder should not create a new version row.
+- 2026-11-26: UI direction settled: minimalism (very little visible text; machine-only information goes into aria-label, title or data attributes), neutral near-black and white (not navy), stacked numbered cards growing downward, boss tiles as icon plus difficulty badge letter (derived from the name's leading word, cosmetic only: 이지 E, 노말 N, 하드 H, 카오스 C, 익스트림 X), dark and light themes with a toggle, names-on/off toggle, PC first and phone usable (touch targets 44 px). Icons and portraits are generated placeholders for now; real images come from the human later and need their own decision (assets, Nexon Open API key as an ADR). UI profile builds the shell on a mock-data `/preview` route; Reviewer-Codex reviews it afterwards (different provider than the author).
 
 ## Parked / undecided
 
@@ -68,7 +70,7 @@ State: `planning` · `awaiting approval` · `implementing` · `in review` · `fi
 - Auto clear-time: samples needed (waiting room, in-battle timer, clear screen for a few bosses; game resolution, window mode). OCR library choice needs an ADR.
 - Whether a Maple boss routine counts as "game practice" for card 1 is the author's reading; ask the instructor if in doubt.
 - Delete the connection check page and the `ping` table once the real app exists.
-- UI direction: reference screenshots received (stacked numbered cards `01 character / 02 boss / 03 stats`, character portrait with a name button, boss tiles with difficulty letter badges, dark and light themes). Waiting for: icons or text rows, difficulty badges or not, default theme; character images and boss icons come from the human (home or tomorrow), asset use to be decided; Nexon Open API may be needed (key = ADR).
+- Character images and boss icons: the human brings them (home or tomorrow); decide where the files live (repo versus external address) and whether a Nexon Open API key is needed.
 
 ## Blockers and questions for the human
 
