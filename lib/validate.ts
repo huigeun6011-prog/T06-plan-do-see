@@ -239,10 +239,10 @@ export function validateRunDetails(input: RunDetails): RunDetails {
 }
 
 export function validateCompletion({
-  units = 1, actual_minutes = null, started_at = null, ended_at = null,
+  units, actual_minutes = null, started_at = null, ended_at = null,
 }: CompleteTodoInput = {}) {
   return {
-    units: integer(units, "units", 1, 1000),
+    units: units === undefined ? null : integer(units, "units", 1, 1000),
     ...validateRunDetails({ actual_minutes, started_at, ended_at }),
   };
 }

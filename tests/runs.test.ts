@@ -64,9 +64,13 @@ describe("run records", () => {
     const first = await completeTodo(sql, todo.id, dayOne, { units: 3 });
     expect(saved(first).todo).toMatchObject({ done_n: 3, is_done: false });
     await expect(completeTodo(sql, todo.id, dayOne, { units: 3 })).resolves.toEqual(first);
+    await expect(completeTodo(sql, todo.id, dayOne)).resolves.toEqual(first);
     const bigger = saved(await completeTodo(sql, todo.id, dayOne, { units: 1000 }));
     expect(bigger.todo).toMatchObject({ done_n: 1000, is_done: true });
     expect(bigger.run.id).toBe(saved(first).run.id);
+    const added = saved(await completeTodo(sql, todo.id, day(1)));
+    expect(added.run.units).toBe(1);
+    expect(added.todo.done_n).toBe(1001);
   });
 
   it("preserves minutes and times on re-completion and supports editing or clearing details", async () => {
