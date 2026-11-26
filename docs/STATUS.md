@@ -3,7 +3,7 @@
 > The first thing a new agent reads after `AGENTS.md`. Keep it short and true. Owned by the Orchestrator.
 
 - **Phase:** UNINITIALIZED   <!-- UNINITIALIZED → Active → Maintenance -->
-- **Last updated:** 2026-11-25 by Claude
+- **Last updated:** 2026-11-26 by Claude
 - **Branch in use:** `main`
 
 ## Summary
@@ -28,13 +28,15 @@ State: `planning` · `awaiting approval` · `implementing` · `in review` · `fi
 - 2026-11-25: soft update and soft delete (new version row, old row `useYN='N'`) instead of UPDATE/DELETE. Why: keeps edit history. Duplicate completion is blocked by a UNIQUE constraint.
 - 2026-11-25: done = all card 1-5 pass criteria and the completion checklist met, plus a final Reviewer run with no open high/medium findings; the Orchestrator separately verifies live behavior. Why: an independent reviewer judges severity better than a fixed list.
 
+- 2026-11-26: ROLES.md aligned with loop mode (delegation prompt instead of approved plan, Reviewer on demand, Free worker off by default). Why: it still described the per-task plan flow of ADR 0001. Profile table checked against Paseo: unchanged.
+
 ## Parked / undecided
 
 - Stack is only a proposal: Next.js (React) + Vercel Hobby + Neon Free + plain SQL. Not confirmed.
 - Signups (Vercel, Neon) not done; check whether Neon asks for a card.
 - Which real plan the human will track (workout / study / work / game practice / ALEPH).
 - Table layout (plan versions, todo, run record, completion record; retro computed on read).
-- Placeholders and TBD commands in AGENTS.md; `docs/agents/ROLES.md` is stale.
+- Placeholders and TBD commands in AGENTS.md.
 
 ## Blockers and questions for the human
 
