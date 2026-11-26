@@ -3,37 +3,53 @@ import { describe, expect, it } from "vitest";
 import { contrast } from "../lib/ui/contrast";
 
 const css = readFileSync("app/preview/preview.css", "utf8");
+const HEX = /^#[0-9a-f]{6}$/i;
+
+function hex(value: string | undefined, what: string): string {
+  if (!value || !HEX.test(value)) throw new Error(`${what}: expected a 6-digit hex color, got ${value}`);
+  return value;
+}
+
+function rule(selector: string): string {
+  const esc = selector.replace(/[.[\]"=]/g, "\\$&");
+  return css.match(new RegExp(`${esc} \\{([^}]*)\\}`))?.[1] ?? "";
+}
+
+function decl(body: string, prop: string): string | undefined {
+  return body.match(new RegExp(`(?:^|[;\\s])${prop}:\\s*([^;]+)`))?.[1].trim();
+}
 
 function vars(selector: string): Record<string, string> {
-  const block = css.match(new RegExp(`${selector.replace(/[.[\]"=]/g, "\\$&")} \\{([^}]*)\\}`))?.[1] ?? "";
-  return Object.fromEntries([...block.matchAll(/(--[\w-]+):\s*(#[0-9a-f]{6})/gi)].map((m) => [m[1], m[2]]));
+  return Object.fromEntries([...rule(selector).matchAll(/(--[\w-]+):\s*([^;]+);/g)].map((m) => [m[1], m[2].trim()]));
 }
 
 const light = vars(".pd");
 const dark = { ...light, ...vars('.pd[data-theme="dark"]') };
-const badges = [...css.matchAll(/\.pd-badge\[data-tone="(\w+)"\] \{ background: (#[0-9a-f]{6})/gi)];
-const mark = css.match(/\.pd-mark \{[^}]*?background: (#[0-9a-f]{6})/)?.[1];
+
+const badgeFg = hex(decl(rule(".pd-badge"), "color"), ".pd-badge color");
+const badges = ["gray", "teal", "pink", "dark", "red"].map((tone) => {
+  const bg = decl(rule(`.pd-badge[data-tone="${tone}"]`), "background");
+  return [tone, hex(bg, `badge ${tone} background`)] as const;
+});
+const markBody = rule(".pd-mark");
+const markFg = hex(decl(markBody, "color"), ".pd-mark color");
+const markBg = hex(decl(markBody, "background"), ".pd-mark background");
 
 describe("contrast", () => {
-  it("finds what it checks", () => {
-    expect(badges).toHaveLength(5);
-    expect(mark).toBeTruthy();
-    expect(light["--fg"]).toBeTruthy();
-    expect(dark["--bg"]).not.toBe(light["--bg"]);
+  it.each(badges)("badge text on %s", (_, bg) => {
+    expect(contrast(badgeFg, bg)).toBeGreaterThanOrEqual(4.5);
   });
 
-  it.each(badges.map((m) => [m[1], m[2]]))("white on %s badge", (_, bg) => {
-    expect(contrast("#ffffff", bg)).toBeGreaterThanOrEqual(4.5);
-  });
-
-  it("white on the marker", () => {
-    expect(contrast("#ffffff", mark!)).toBeGreaterThanOrEqual(4.5);
+  it("marker text", () => {
+    expect(contrast(markFg, markBg)).toBeGreaterThanOrEqual(4.5);
   });
 
   describe.each([["light", light], ["dark", dark]])("%s theme", (_, t) => {
-    it.each(["--bg", "--card", "--tile"])("text on %s", (surface) => {
-      expect(contrast(t["--fg"], t[surface])).toBeGreaterThanOrEqual(7);
-      expect(contrast(t["--dim"], t[surface])).toBeGreaterThanOrEqual(4.5);
+    it.each(["--bg", "--card", "--tile"])("on %s", (surface) => {
+      const s = hex(t[surface], surface);
+      expect(contrast(hex(t["--fg"], "--fg"), s)).toBeGreaterThanOrEqual(7);
+      expect(contrast(hex(t["--dim"], "--dim"), s)).toBeGreaterThanOrEqual(4.5);
+      expect(contrast(hex(t["--done"], "--done"), s)).toBeGreaterThanOrEqual(3);
     });
   });
 });

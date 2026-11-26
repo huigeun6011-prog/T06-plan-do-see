@@ -40,7 +40,7 @@
 .pd-tiles { display: flex; flex-wrap: wrap; gap: 8px; }
 .pd-sum { display: flex; gap: 16px; color: var(--dim); font-size: .9rem; font-variant-numeric: tabular-nums; }
 
-.pd-icon { width: var(--pd-icon); height: var(--pd-icon); border-radius: 14px; object-fit: cover; display: inline-flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: calc(var(--pd-icon) * .45); flex: none; }
+.pd-icon { width: var(--pd-icon); height: var(--pd-icon); border-radius: 14px; object-fit: cover; display: inline-flex; align-items: center; justify-content: center; color: #ffffff; font-weight: 700; font-size: calc(var(--pd-icon) * .45); flex: none; }
 .pd-round { border-radius: 50%; }
 
 .pd-tile {
@@ -48,11 +48,10 @@
   border-radius: 16px; border: 1px solid var(--line); background: var(--tile);
 }
 .pd-tile[data-done="true"] { border-color: var(--done); }
-.pd-tile[data-done="true"] .pd-icon { opacity: .45; }
 .pd-iconwrap { position: relative; display: inline-flex; }
-.pd-mark { position: absolute; right: -6px; bottom: -6px; min-width: 20px; padding: 0 5px; border-radius: 999px; background: #177a50; color: #fff; font-size: .7rem; font-weight: 700; line-height: 20px; text-align: center; font-variant-numeric: tabular-nums; }
+.pd-mark { position: absolute; right: -6px; bottom: -6px; min-width: 20px; padding: 0 5px; border-radius: 999px; background: #177a50; color: #ffffff; font-size: .7rem; font-weight: 700; line-height: 20px; text-align: center; font-variant-numeric: tabular-nums; }
 .pd-meta { display: flex; align-items: center; gap: 4px; min-height: 18px; }
-.pd-badge { width: 18px; height: 18px; border-radius: 6px; font-size: .7rem; font-weight: 700; line-height: 18px; color: #fff; text-align: center; }
+.pd-badge { width: 18px; height: 18px; border-radius: 6px; font-size: .7rem; font-weight: 700; line-height: 18px; color: #ffffff; text-align: center; }
 .pd-badge[data-tone="gray"] { background: #6e6e6e; }
 .pd-badge[data-tone="teal"] { background: #0a7274; }
 .pd-badge[data-tone="pink"] { background: #c2417f; }
