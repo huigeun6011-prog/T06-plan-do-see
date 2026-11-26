@@ -22,6 +22,7 @@ ALEPH task 6: Plan-Do-See diary (plan/do/see data linked, persisted in a server 
 |---|---|---|---|---|
 | DB connection check page (throwaway) | none; delegation prompt only | Implementer | `feat/db-ping` (`3c8519a`), workspace `wks_4bb427a12459055e` | merged to `main` (`ef09043`), deployed; worktree can be archived |
 | Core table design (no doping) | `docs/plans/0001-core-schema.md` | Planner | `docs/core-schema-plan`, workspace `wks_3be368cacaae8028` | done; worktree can be archived |
+| Core chunks 1-2: schema on `dev`, test helper, Seoul time helpers | `docs/plans/0001-core-schema.md` (section 8) | Implementer | `feat/core-schema`, workspace `wks_4c20089b9b84758d` | implementing |
 
 State: `planning` · `awaiting approval` · `implementing` · `in review` · `fixing` · `blocked` · `ready to merge`
 
