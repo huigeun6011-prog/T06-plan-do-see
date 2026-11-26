@@ -1,10 +1,16 @@
-import { neon, type NeonQueryFunctionInTransaction, type NeonQueryInTransaction } from "@neondatabase/serverless";
+import {
+  neon, type HTTPTransactionOptions, type NeonQueryFunctionInTransaction, type NeonQueryInTransaction,
+} from "@neondatabase/serverless";
 
 type Row = Record<string, unknown>;
 
 export interface SqlClient {
   (strings: TemplateStringsArray, ...values: unknown[]): Promise<Row[]>;
-  transaction(queries: (sql: NeonQueryFunctionInTransaction<false, false>) => NeonQueryInTransaction[]): Promise<Row[][]>;
+  query(text: string, params: unknown[]): Promise<Row[]>;
+  transaction(
+    queries: (sql: NeonQueryFunctionInTransaction<false, false>) => NeonQueryInTransaction[],
+    options?: Pick<HTTPTransactionOptions<false, false>, "isolationLevel">,
+  ): Promise<Row[][]>;
 }
 
 export function connectDatabase(): SqlClient {
