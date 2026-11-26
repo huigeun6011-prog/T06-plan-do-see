@@ -12,7 +12,7 @@ ALEPH task 6: Plan-Do-See diary (plan/do/see data linked, persisted in a server 
 
 ## Next step
 
-1. Wait for Implementer's report on the connection check page; review it, then the Orchestrator deploys it to Vercel and verifies it in a private window.
+1. Human OKs merging `feat/db-ping` into `main` and pushing to GitHub; then the human imports the repo in Vercel and enters `DATABASE_URL` there; the Orchestrator verifies the deployed page without a session.
 2. Human sends the doping table (name, duration, meso price, coin cost) from home.
 3. Orchestrator sends the core table design to Planner.
 
@@ -20,7 +20,7 @@ ALEPH task 6: Plan-Do-See diary (plan/do/see data linked, persisted in a server 
 
 | Task | Plan | Profile | Workspace / branch | State |
 |---|---|---|---|---|
-| DB connection check page (throwaway) | none; delegation prompt only | Implementer | `feat/db-ping`, workspace `wks_4bb427a12459055e` | implementing |
+| DB connection check page (throwaway) | none; delegation prompt only | Implementer | `feat/db-ping` (`3c8519a`), workspace `wks_4bb427a12459055e` | ready to merge (needs the human's OK) |
 
 State: `planning` · `awaiting approval` · `implementing` · `in review` · `fixing` · `blocked` · `ready to merge`
 
@@ -42,6 +42,8 @@ State: `planning` · `awaiting approval` · `implementing` · `in review` · `fi
 - 2026-11-26: automatic clear-time measurement is planned for later, not now. Method: browser screen share of the game window, analysed in the browser, no frames sent to the server; the boss and difficulty come from the waiting-room map name and the time from the in-game timer. Needs sample screenshots or a recording first, then a spike. Manual entry stays as the fallback and both feed one run record. Why: the human wants full automation, accepts about one week, and does not want to rebuild an external service by hand. No scraping of maple-boss.com (its terms, article 7, forbid it).
 - 2026-11-26: stack confirmed (ADR 0003): Next.js (React) on Vercel Hobby, Neon Free Postgres only, plain SQL with parameters, no ORM. TypeScript, plain CSS and Vitest are Orchestrator defaults. Why: server-side layer keeps the connection string off the browser; SQL-level guarantees are what the task checks. Signups done (Neon asked for no card).
 - 2026-11-26: Neon set up in the main folder (`neon init`, `neon login`, `neon deploy`): Postgres only, `.env.local` pulled and git-ignored, config committed (`1c6d860`). `neon init` also reported configuring agent plugins or skills outside the repo (claude-code, codex, vscode, others); not inspected. Connection check page delegated to Implementer in a worktree; `.env.local` copied there without reading it.
+- 2026-11-26: connection check page built by Implementer (`3c8519a` on `feat/db-ping`). Orchestrator re-ran `npm test` (6 passed) and `npm run build` (passed), read the diff (parameterized queries, server-only connection string, notes rendered as text, no secrets in the tree). Implementer reported a local save and restart check against Neon. Driver: `@neondatabase/serverless` over HTTP. One smoke-test row remains in the `ping` table. No Reviewer run: throwaway code.
+- 2026-11-26: workers may use Aside only to read public documentation; they must not open or read the human's signed-in tabs or copy tokens or connection strings. Why: Aside drives the human's own browser. The human set the default Aside profile to the connected one.
 
 ## Parked / undecided
 
@@ -50,7 +52,8 @@ State: `planning` · `awaiting approval` · `implementing` · `in review` · `fi
 - What goes into the reward field: net of doping cost or crystal price only. The tool reads the value as entered (proposal).
 - Auto clear-time: samples needed (waiting room, in-battle timer, clear screen for a few bosses; game resolution, window mode). OCR library choice needs an ADR.
 - Whether a Maple boss routine counts as "game practice" for card 1 is the author's reading; ask the instructor if in doubt.
-- Placeholders and TBD commands in AGENTS.md (install, test, lint, run).
+- After merge: fill install/test/lint/run in AGENTS.md section 2 (`npm ci`, `npm test`, lint N/A, `npm run dev`), remove its placeholder callout, and write the real layout in ARCHITECTURE.md.
+- Delete the connection check page and the `ping` table once the real app exists.
 
 ## Blockers and questions for the human
 
