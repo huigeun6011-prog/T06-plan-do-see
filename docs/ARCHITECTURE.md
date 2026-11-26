@@ -25,11 +25,16 @@ Update this file whenever structure, components or conventions change.
 
 | Component | Responsibility | Location |
 |---|---|---|
-| Schema and DB scripts | `db/schema.sql`, `scripts/apply-schema.mjs`, `scripts/schema.mjs` (branch guard), `tests/helpers/db.ts` | `db/`, `scripts/`, `tests/` |
-| Seoul time helpers | `todaySeoul`, `periodFor`, `nextPeriod`, `formatDeadline`, `parseDeadlineInput` (pure, fixed +09:00) | `lib/time.ts` |
-| Connection check page (throwaway) | Proves save and read against Neon from Vercel; delete when the real app exists | `app/page.tsx`, `app/ping/route.ts`, `app/note.ts`, `db/ping.ts`, `db/ping.sql` |
+| Schema and DB scripts | DDL, apply script with branch guard (`dev` default, `test` for tests, `production` only with `--production`) | `db/schema.sql`, `scripts/` |
+| Seoul time helpers | periods (Thursday and 1st boundaries), deadline display (00:00 shown as 24:00 of the previous day) and input | `lib/time.ts` |
+| Validation | typed input checks shared by all data functions | `lib/validate.ts`, `lib/todo-sort.ts` |
+| Data access (server only) | plain SQL functions that take an `sql` client first: characters, versioned registrations, plans with idempotent todo generation, todos (CRUD, search, filter, sort, week view), run records, retro numbers and overview, improvement todos, export snapshot | `db/*.ts` |
+| Export | `GET /export` downloads one JSON snapshot (all rows including history, derived retro totals) | `app/export/route.ts`, `db/export.ts` |
+| Schema contract | tables, columns, relations, date rules, aggregates; a test compares it with the database | `contracts/pds-schema-v2.json` |
+| UI shell (mock data) | `/preview`: numbered cards, character cards, boss tiles, icon slot, theme on the wrapper, contrast tested from the CSS | `app/preview/`, `app/components/`, `lib/ui/` |
+| Connection check page (throwaway) | proves save and read from Vercel to Neon; delete when the real app exists | `app/page.tsx`, `app/ping/route.ts`, `app/note.ts`, `db/ping.*` |
 
-The real app (plans, todos, run records, retro) is not built yet; see `docs/PROJECT.md` and `docs/ROADMAP.md`.
+Screens wired to real data are not built yet (see `docs/ROADMAP.md`).
 
 ## Data model
 

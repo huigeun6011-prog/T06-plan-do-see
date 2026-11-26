@@ -2,20 +2,21 @@
 
 > The first thing a new agent reads after `AGENTS.md`. Keep it short and true. Owned by the Orchestrator.
 
-- **Phase:** UNINITIALIZED   <!-- UNINITIALIZED → Active → Maintenance -->
-- **Last updated:** 2026-11-26 by Claude
+- **Phase:** Active   <!-- UNINITIALIZED → Active → Maintenance -->
+- **Last updated:** 2026-11-26 (end of day) by Claude
 - **Branch in use:** `main`
 
 ## Summary
 
-ALEPH task 6: Plan-Do-See diary (plan/do/see data linked, persisted in a server DB, no login). Working in loop mode with delegation (ADR 0002). Paseo profiles checked: all 6 exist. Task text saved in `docs/TASK.md`. Domain, feature scope and stack are settled (decision log, ADR 0003); no app code yet; install/test/lint/run commands in AGENTS.md are filled when the app exists.
+ALEPH task 6: Plan-Do-See diary for the owner's weekly MapleStory routine (plan, todo, run record, retro linked in a server DB, no login). Loop mode with delegation (ADR 0002). Settled: stack (ADR 0003), data model (ADR 0004, `docs/plans/0001-core-schema.md`), AI recap design (ADR 0005). Built and merged to `main`: schema on Neon `dev`/`test` with a branch guard, Seoul time helpers, characters, registrations, plans with idempotent generation, todos with search/filter/sort, run records, retro numbers, improvement todo, and the `/preview` UI shell with mock data. `production` DB still has only the `ping` table; the live site (https://plan-do-see-diary-six.vercel.app) shows the connection check page at `/` and the mock `/preview`. Chunk 9 (`/export` and the schema contract) is built and reviewed on `feat/export`, not merged.
 
 ## Next step
 
-1. Implementer builds chunk 3 (characters and registrations, no screens) on a new branch.
-2. Human sends the UI detail changes (before the wiring starts), then UI and Implementer wire the screens to the real data (W1-W5).
-3. Human sends the doping table, boss lists and character images when home (18:00 or tomorrow).
-4. Chunks 4-8 follow in the order of the plan; the AI recap (chunk 11) waits for the API key.
+Tomorrow, in this order:
+1. Human decides on merging `feat/export` (chunk 9) into `main` and pushing. Note: `/export` will answer with a short generic 500 on the live site until the schema is applied to `production`.
+2. Human sends: the doping table (name, duration, meso price, coin cost), the boss and mission lists as text (names, clear minutes, party size, memo; include missions such as 지하수로 and 앵글러 컴퍼니), and later the character images. Human answers the question below about hunting.
+3. Start the UI wiring W1 to W5 (see `docs/ROADMAP.md`); apply the UI feedback list below first. Apply the schema to `production` (`npm run db:apply:production`, the human's OK first) before the first wired deploy.
+4. AI recap (chunk 11) waits for the API key; the doping, today-suggestion and coin forecast wait for the doping table.
 
 ## In flight
 
@@ -30,7 +31,7 @@ ALEPH task 6: Plan-Do-See diary (plan/do/see data linked, persisted in a server 
 | Core chunk 6: run records, miss reason (+ week view ordering fix, `setEntryOrder`) | `docs/plans/0001-core-schema.md` (section 8) | Implementer | `feat/runs` (`c831e4b`, stacked on `feat/todos`), same workspace | reviewed and accepted by the Orchestrator (127 tests, build); merged to `main` (chunks 5-6) with the human's OK |
 | Core chunk 7: retro, grouped retro, history, overview per character (+ two small fixes) | `docs/plans/0001-core-schema.md` (section 8) | Implementer | `feat/retro` (`3ab0520`, stacked on `feat/runs`), same workspace | reviewed and accepted by the Orchestrator (130 tests, build, db:apply on dev); merged to `main` with chunk 8 |
 | Core chunk 8: improvement as a todo in the next plan (manual path), plans needing a retro | `docs/plans/0001-core-schema.md` (section 8), ADR 0005 | Implementer | `feat/improvement` (`f66cda8`, stacked on `feat/retro`), same workspace | reviewed and accepted by the Orchestrator (135 tests, build); merged to `main` (chunks 7-8) with the human's OK |
-| Core chunk 9: export and `contracts/pds-schema-v2.json` | `docs/plans/0001-core-schema.md` (section 7) | Implementer | `feat/export` (stacked on `feat/improvement`), same workspace | implementing |
+| Core chunk 9: export and `contracts/pds-schema-v2.json` | `docs/plans/0001-core-schema.md` (section 7) | Implementer | `feat/export` (`ec5579f`, stacked on `feat/improvement`), same workspace | reviewed and accepted by the Orchestrator (141 tests, build, route is dynamic); waiting for the human's merge OK |
 | UI shell on `/preview` with mock data | prompt only (look, components, constraints) | UI | `feat/ui-shell` (`3664a99`), workspace `wks_3256fb9c504da5f0` | merged to `main` (`5761205`) with the human's OK; two Reviewer-Codex rounds, round 2 fixes verified by the Orchestrator; the dev server on port 3010 can be stopped |
 | Review of the UI shell (read only) | `3664a99` | Reviewer-Codex | `review/ui-shell`, workspace `wks_96f047710228dc8d` | round 2 done; findings fixed |
 
@@ -93,7 +94,9 @@ State: `planning` · `awaiting approval` · `implementing` · `in review` · `fi
 
 ## Blockers and questions for the human
 
-- None
+- Merge OK for `feat/export` (chunk 9)? Optional standing approval: the Orchestrator merges and pushes logic chunks that passed review and tests and only reports; screen-changing deploys, `production` DB changes and new external services or secrets are still asked first.
+- Hunting tiles: do you sometimes log several hunts at once or for earlier days? (decides whether earlier days' boxes stay locked in the box editor.)
+- Clean-up options for later: archive the finished Paseo workspaces (`db-ping`, `core-schema-plan`, `review-ui-shell`, `ui-shell`).
 
 ## Parked follow-ups
 
