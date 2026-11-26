@@ -131,6 +131,47 @@ export interface TodoInput {
   target_count?: number;
 }
 
+export type TodoPatch = Partial<TodoInput>;
+
+export function validateTodoPriority(value: unknown): number {
+  return integer(value, "priority", 1, 3);
+}
+
+export function validateTodoTag(value: unknown): string {
+  return text(value, "tag", 1, 30);
+}
+
+export function validateTodoPage(limit: unknown, offset: unknown) {
+  return {
+    limit: integer(limit, "limit", 1, 1000),
+    offset: integer(offset, "offset", 0, Number.MAX_SAFE_INTEGER),
+  };
+}
+
+const todoFields = {
+  title: (value: unknown) => text(value, "title", 1, 200),
+  note: (value: unknown) => text(value, "note", 0, 1000, false),
+  character_id: (value: unknown) => value === null ? null : validateId(value, "character_id"),
+  due_at: (value: unknown) => validateDate(value, "due_at"),
+  priority: validateTodoPriority,
+  tags: (value: unknown) => validateTags(value),
+  expected_minutes: (value: unknown) => integer(value, "expected_minutes", 0, 2147483647),
+  target_count: (value: unknown) => integer(value, "target_count", 1, 1000),
+};
+
+export function validateTodoPatch(patch: TodoPatch) {
+  if (!patch || typeof patch !== "object" || Array.isArray(patch)) {
+    throw new ValidationError("patch", "Choose a field to update.");
+  }
+  const entries = Object.entries(patch);
+  if (!entries.length) throw new ValidationError("patch", "Choose a field to update.");
+  return entries.map(([field, value]) => {
+    if (!Object.hasOwn(todoFields, field)) throw new ValidationError(field, "This field cannot be updated.");
+    const key = field as keyof typeof todoFields;
+    return [key, todoFields[key](value)] as const;
+  });
+}
+
 export function validatePlanKind(value: unknown): PlanKind {
   return value === "event" ? value : validatePeriodKind(value);
 }
@@ -167,13 +208,13 @@ export function validateTodo({
   target_count = 1,
 }: TodoInput) {
   return {
-    title: text(title, "title", 1, 200),
-    note: text(note, "note", 0, 1000, false),
-    character_id: character_id === null ? null : validateId(character_id, "character_id"),
-    due_at: due_at === undefined ? null : validateDate(due_at, "due_at"),
-    priority: integer(priority, "priority", 1, 3),
-    tags: validateTags(tags),
-    expected_minutes: integer(expected_minutes, "expected_minutes", 0, 2147483647),
-    target_count: integer(target_count, "target_count", 1, 1000),
+    title: todoFields.title(title),
+    note: todoFields.note(note),
+    character_id: todoFields.character_id(character_id),
+    due_at: due_at === undefined ? null : todoFields.due_at(due_at),
+    priority: todoFields.priority(priority),
+    tags: todoFields.tags(tags),
+    expected_minutes: todoFields.expected_minutes(expected_minutes),
+    target_count: todoFields.target_count(target_count),
   };
 }
