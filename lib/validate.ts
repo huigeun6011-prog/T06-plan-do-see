@@ -258,3 +258,7 @@ export function validateRunDate(value: unknown): string {
 export function validateMissReason(reason: unknown): string | null {
   return reason === null ? null : text(reason, "miss_reason", 0, 200) || null;
 }
+
+export function validateRetroHistoryLimit(value: unknown): number {
+  return integer(value, "limit", 1, Number.MAX_SAFE_INTEGER);
+}
