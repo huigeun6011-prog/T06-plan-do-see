@@ -25,3 +25,5 @@ coverage/
 # Local agent state
 .claude/settings.local.json
 .neon
+
+.vercel

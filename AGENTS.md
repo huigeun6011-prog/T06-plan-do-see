@@ -3,9 +3,6 @@
 Single source of truth for every AI agent in this repo (Claude Code, Codex, Antigravity, …).
 `CLAUDE.md` only points here. Talk to the human in the language they use; write repo files in English unless told otherwise.
 
-> **Loop mode (ADR 0002):** this repo is developed in a human-AI loop (§4). The full `docs/BOOTSTRAP.md` ritual is not run;
-> `{{...}}` placeholders and `TBD` commands are filled in one confirmed chunk at a time. Delete this callout once none remain.
-
 ## 1. Cold start (every new session, every agent)
 
 1. Read this file.
@@ -18,10 +15,10 @@ Single source of truth for every AI agent in this repo (Claude Code, Codex, Anti
 
 - **What:** Plan-Do-See diary (ALEPH task 6, text in `docs/TASK.md`): plan, todo, run record and retro linked in a server DB, no login. First real data: the owner's weekly MapleStory boss routine. Details in `docs/PROJECT.md`.
 - **Stack:** Next.js (React, TypeScript) on Vercel, Neon Postgres, plain SQL with parameterized queries (ADR 0003)
-- **Install:** `{{INSTALL_CMD}}`
-- **Test:** `{{TEST_CMD}}`
-- **Lint/format:** `{{LINT_CMD}}`
-- **Run:** `{{RUN_CMD}}`
+- **Install:** `npm ci`
+- **Test:** `npm test` (Vitest)
+- **Lint/format:** `N/A` for now; the type check runs inside `npm run build`
+- **Run:** `npm run dev` (local); `npm run build` then `npm start` for a production run. Needs `.env.local` with `DATABASE_URL` (see `.env.example`).
 
 A command that does not apply to this project (for example lint for a novel) is written `N/A`; skip it, do not invent one.
 

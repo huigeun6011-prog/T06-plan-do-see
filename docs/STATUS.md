@@ -12,7 +12,8 @@ ALEPH task 6: Plan-Do-See diary (plan/do/see data linked, persisted in a server 
 
 ## Next step
 
-1. Human OKs merging `feat/db-ping` into `main` and pushing to GitHub; then the human imports the repo in Vercel and enters `DATABASE_URL` there; the Orchestrator verifies the deployed page without a session.
+1. Human sends the doping table (from home) and confirms the table design direction (see Parked).
+2. Orchestrator sends the core table design to Planner, then the core build to Implementer.
 2. Human sends the doping table (name, duration, meso price, coin cost) from home.
 3. Orchestrator sends the core table design to Planner.
 
@@ -20,7 +21,7 @@ ALEPH task 6: Plan-Do-See diary (plan/do/see data linked, persisted in a server 
 
 | Task | Plan | Profile | Workspace / branch | State |
 |---|---|---|---|---|
-| DB connection check page (throwaway) | none; delegation prompt only | Implementer | `feat/db-ping` (`3c8519a`), workspace `wks_4bb427a12459055e` | ready to merge (needs the human's OK) |
+| DB connection check page (throwaway) | none; delegation prompt only | Implementer | `feat/db-ping` (`3c8519a`), workspace `wks_4bb427a12459055e` | merged to `main` (`ef09043`), deployed |
 
 State: `planning` · `awaiting approval` · `implementing` · `in review` · `fixing` · `blocked` · `ready to merge`
 
@@ -44,6 +45,7 @@ State: `planning` · `awaiting approval` · `implementing` · `in review` · `fi
 - 2026-11-26: Neon set up in the main folder (`neon init`, `neon login`, `neon deploy`): Postgres only, `.env.local` pulled and git-ignored, config committed (`1c6d860`). `neon init` also reported configuring agent plugins or skills outside the repo (claude-code, codex, vscode, others); not inspected. Connection check page delegated to Implementer in a worktree; `.env.local` copied there without reading it.
 - 2026-11-26: connection check page built by Implementer (`3c8519a` on `feat/db-ping`). Orchestrator re-ran `npm test` (6 passed) and `npm run build` (passed), read the diff (parameterized queries, server-only connection string, notes rendered as text, no secrets in the tree). Implementer reported a local save and restart check against Neon. Driver: `@neondatabase/serverless` over HTTP. One smoke-test row remains in the `ping` table. No Reviewer run: throwaway code.
 - 2026-11-26: workers may use Aside only to read public documentation; they must not open or read the human's signed-in tabs or copy tokens or connection strings. Why: Aside drives the human's own browser. The human set the default Aside profile to the connected one.
+- 2026-11-26: merged to `main` and pushed to GitHub with the human's OK (`ef09043`). Vercel project `plan-do-see-diary` created and deployed with the Vercel CLI (no Git integration: the Vercel account has no GitHub login connection yet). `DATABASE_URL` stored as a Production secret, taken from `.env.local` without printing it. Production URL: https://plan-do-see-diary-six.vercel.app . Verified without cookies: GET 200, POST saved a note, it was listed again, a markup note came back escaped, a blank note was rejected (303 to the error page), and the first row came from the Implementer's local run, so both hit the same Neon database. The deployment-specific URL returns 302 (Vercel protection); the production URL is open.
 
 ## Parked / undecided
 
@@ -52,7 +54,8 @@ State: `planning` · `awaiting approval` · `implementing` · `in review` · `fi
 - What goes into the reward field: net of doping cost or crystal price only. The tool reads the value as entered (proposal).
 - Auto clear-time: samples needed (waiting room, in-battle timer, clear screen for a few bosses; game resolution, window mode). OCR library choice needs an ADR.
 - Whether a Maple boss routine counts as "game practice" for card 1 is the author's reading; ask the instructor if in doubt.
-- After merge: fill install/test/lint/run in AGENTS.md section 2 (`npm ci`, `npm test`, lint N/A, `npm run dev`), remove its placeholder callout, and write the real layout in ARCHITECTURE.md.
+- Vercel Git integration needs a GitHub login connection on the Vercel account (human, in the browser); until then every deploy is `vercel deploy --prod` from the Orchestrator.
+- Check in a real private browser window once (T06-C01); only cookie-less requests were tested so far.
 - Delete the connection check page and the `ping` table once the real app exists.
 
 ## Blockers and questions for the human
