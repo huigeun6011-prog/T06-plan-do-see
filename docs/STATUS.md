@@ -13,7 +13,7 @@ ALEPH task 6: Plan-Do-See diary (plan/do/see data linked, persisted in a server 
 ## Next step
 
 1. Implementer builds chunk 3 (characters and registrations, no screens) on a new branch.
-2. Human sends UI direction (reference screenshots received: stacked numbered cards, character portrait, boss tiles, dark and light themes), then UI builds the screen shell.
+2. Human sends the UI detail changes (before the wiring starts), then UI and Implementer wire the screens to the real data (W1-W5).
 3. Human sends the doping table, boss lists and character images when home (18:00 or tomorrow).
 4. Chunks 4-8 follow in the order of the plan; the AI recap (chunk 11) waits for the API key.
 
@@ -30,8 +30,8 @@ ALEPH task 6: Plan-Do-See diary (plan/do/see data linked, persisted in a server 
 | Core chunk 6: run records, miss reason (+ week view ordering fix, `setEntryOrder`) | `docs/plans/0001-core-schema.md` (section 8) | Implementer | `feat/runs` (`c831e4b`, stacked on `feat/todos`), same workspace | reviewed and accepted by the Orchestrator (127 tests, build); merged to `main` (chunks 5-6) with the human's OK |
 | Core chunk 7: retro, grouped retro, history, overview per character (+ two small fixes) | `docs/plans/0001-core-schema.md` (section 8) | Implementer | `feat/retro` (`3ab0520`, stacked on `feat/runs`), same workspace | reviewed and accepted by the Orchestrator (130 tests, build, db:apply on dev); not merged yet |
 | Core chunk 8: improvement as a todo in the next plan (manual path), plans needing a retro | `docs/plans/0001-core-schema.md` (section 8), ADR 0005 | Implementer | `feat/improvement` (stacked on `feat/retro`), same workspace | implementing |
-| UI shell on `/preview` with mock data | prompt only (look, components, constraints) | UI | `feat/ui-shell` (`3664a99`), workspace `wks_3256fb9c504da5f0` | done; Orchestrator re-ran 10 UI tests and the build; Reviewer-Codex reviewing; human's visual check pending (dev server on port 3010) |
-| Review of the UI shell (read only) | `3664a99` | Reviewer-Codex | `review/ui-shell`, workspace `wks_96f047710228dc8d` | in review |
+| UI shell on `/preview` with mock data | prompt only (look, components, constraints) | UI | `feat/ui-shell` (`3664a99`), workspace `wks_3256fb9c504da5f0` | merged to `main` (`5761205`) with the human's OK; two Reviewer-Codex rounds, round 2 fixes verified by the Orchestrator; the dev server on port 3010 can be stopped |
+| Review of the UI shell (read only) | `3664a99` | Reviewer-Codex | `review/ui-shell`, workspace `wks_96f047710228dc8d` | round 2 done; findings fixed |
 
 State: `planning` · `awaiting approval` · `implementing` · `in review` · `fixing` · `blocked` · `ready to merge`
 
@@ -73,6 +73,7 @@ State: `planning` · `awaiting approval` · `implementing` · `in review` · `fi
 - 2026-11-26: chunk 6 accepted (`feat/runs`): `completeTodo` locks the todo row with `FOR UPDATE` in a ReadCommitted transaction and then upserts in a separate statement, so competing requests (also on different Seoul dates for a target-1 todo) are serialized; `{ alreadyDone: true }` for a target-1 todo already done on another day. `setEntryOrder` reorders in place (no new version) and the week view now orders by the current registration version. Orchestrator decisions sent as chunk 7 steps: a bare complete keeps stored units; only runs with done = true count toward a todo's actual minutes (an un-completed run keeps its minutes but they are not counted).
 - 2026-11-26: UI shell `/preview` (`feat/ui-shell`): two review rounds by Reviewer-Codex. Round 2 left one medium and three low findings (theme init after client-side navigation; placeholder letters dimmed on done tiles; contrast test hard-codes white; https URLs with userinfo accepted). Nothing links to `/preview` yet, so the medium is latent. Brought to the human for a decision (fix, then merge on the Orchestrator's own verification, or merge as is).
 - 2026-11-26: chunk 7 accepted (`feat/retro`): `db/retro.ts` with `getRetro`, `getRetroByGroup` (character or tag; a todo with two tags counts in both; untagged todos are left out of the tag view), `listRetroHistory` (one grouped query), `getOverview` (per character, account-level last). Retro numbers use the shared `TODO_SCOPE_PREDICATES` text, so each number equals the length of its drill-down list. `todo_state.actual_minutes` now sums only runs with done = true. `completeTodo` without a count keeps the stored units for that day. The UI shell passed two review rounds (round 2 fixes verified by the Orchestrator: 42 UI tests, build, CSS diff read); merge of `/preview` waits for the human's OK.
+- 2026-11-26: `/preview` (UI shell, mock data) merged to `main` as `5761205` with the human's OK; it is public on the site address, fake data only. `next.config.mjs` conflict resolved by taking the UI branch's version (`agentRules: false`, `devIndicators: false`). The human has many detail changes for the UI and will give them later; they are collected before the UI is wired to real data. UI wiring plan (after chunk 8): W1 registrations screen, W2 week screen with real todos and run recording, W3 minutes and miss reason input, W4 retro screen with the improvement, W5 events; plus the home-page note for plans without a retro. Suggestions already made to the human: top strip with what is left and remaining minutes, a show-only-remaining toggle, an undo after an accidental tap, a today marker on the hunting tile.
 
 ## Parked / undecided
 
