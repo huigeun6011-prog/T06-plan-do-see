@@ -14,7 +14,7 @@ ALEPH task 6: Plan-Do-See diary for the owner's weekly MapleStory routine (plan,
 
 Tomorrow, in this order:
 1. Human decides on merging `feat/export` (chunk 9) into `main` and pushing. Note: `/export` will answer with a short generic 500 on the live site until the schema is applied to `production`.
-2. Human sends: the doping table (name, duration, meso price, coin cost), the boss and mission lists as text (names, clear minutes, party size, memo; include missions such as 지하수로 and 앵글러 컴퍼니), and later the character images. Human answers the question below about hunting.
+2. Human sends: the doping table (name, duration, meso price, coin cost), the boss and mission lists as text (names, clear minutes, party size, memo; include missions such as 지하수로 and 앵글러 컴퍼니), and later the character images. 
 3. Start the UI wiring W1 to W5 (see `docs/ROADMAP.md`); apply the UI feedback list below first. Apply the schema to `production` (`npm run db:apply:production`, the human's OK first) before the first wired deploy.
 4. AI recap (chunk 11) waits for the API key; the doping, today-suggestion and coin forecast wait for the doping table.
 
@@ -77,6 +77,7 @@ State: `planning` · `awaiting approval` · `implementing` · `in review` · `fi
 - 2026-11-26: chunk 7 accepted (`feat/retro`): `db/retro.ts` with `getRetro`, `getRetroByGroup` (character or tag; a todo with two tags counts in both; untagged todos are left out of the tag view), `listRetroHistory` (one grouped query), `getOverview` (per character, account-level last). Retro numbers use the shared `TODO_SCOPE_PREDICATES` text, so each number equals the length of its drill-down list. `todo_state.actual_minutes` now sums only runs with done = true. `completeTodo` without a count keeps the stored units for that day. The UI shell passed two review rounds (round 2 fixes verified by the Orchestrator: 42 UI tests, build, CSS diff read); merge of `/preview` waits for the human's OK.
 - 2026-11-26: `/preview` (UI shell, mock data) merged to `main` as `5761205` with the human's OK; it is public on the site address, fake data only. `next.config.mjs` conflict resolved by taking the UI branch's version (`agentRules: false`, `devIndicators: false`). The human has many detail changes for the UI and will give them later; they are collected before the UI is wired to real data. UI wiring plan (after chunk 8): W1 registrations screen, W2 week screen with real todos and run recording, W3 minutes and miss reason input, W4 retro screen with the improvement, W5 events; plus the home-page note for plans without a retro. Suggestions already made to the human: top strip with what is left and remaining minutes, a show-only-remaining toggle, an undo after an accidental tap, a today marker on the hunting tile.
 - 2026-11-26: chunk 8 accepted (`feat/improvement`): `saveImprovement` puts one improvement todo (tag `improvement`) into the plan that starts where the source plan ends (weekly gives next week, monthly gives next month); an event gives the current week; the same source saves once (unique index), edits change the title only, an event improvement keeps its first target; `listPlansNeedingRetro` lists ended plans (end inclusive) without an improvement. Chunks 7 and 8 were merged to `main` with the human's OK.
+- 2026-11-26: hunting boxes: the human logs several hunts at once only on the day they really did them, and never fills earlier days afterwards. Decision: boxes filled by earlier days are locked, only today's boxes are editable, and one confirm sets today's units (matches the backend rule of one run per todo per Seoul day with the count set, not added).
 
 ## Parked / undecided
 
@@ -87,7 +88,7 @@ State: `planning` · `awaiting approval` · `implementing` · `in review` · `fi
 - Delete the connection check page and the `ping` table once the real app exists.
 - Character images and boss icons: the human brings them (home or tomorrow); decide where the files live (repo versus external address) and whether a Nexon Open API key is needed.
 - UI feedback from the human (2026-11-26), to be applied when the screens are wired (nothing changed yet):
-  1. Cumulative tiles (hunting 6/6): today a click only adds one. Wanted: a row of boxes (e.g. six squares) that the user clicks to set the count, several at once, then confirms (확정). Backend fit: `completeTodo` SETS that day's units; boxes filled by earlier days are locked, today's boxes are editable, confirm sends units = clicked total minus units from other days (clamped at 0).
+  1. Cumulative tiles (hunting 6/6; decided: earlier days locked, today editable): today a click only adds one. Wanted: a row of boxes (e.g. six squares) that the user clicks to set the count, several at once, then confirms (확정). Backend fit: `completeTodo` SETS that day's units; boxes filled by earlier days are locked, today's boxes are editable, confirm sends units = clicked total minus units from other days (clamped at 0).
   2. A character's tiles (12 or more bosses) must stay on ONE line unless the screen is narrow: narrower tiles and a wider card on PC (the current max width of 960 px forces a wrap).
   3. Weekly content is not only bosses: 지하수로, 앵글러 컴퍼니 and similar missions also appear per character. They are ordinary weekly registrations (no difficulty word, so no badge); show them as a second tile row (mission) in the character card, mock data to include them; the human will list them with minutes.
   4. Where to enter the time a boss took: the preview has no such input yet; the data side exists (`completeTodo` and `setRunDetails` take minutes, started and ended). Proposal: tapping a single tile completes it at once; a small `분` chip shows the entered minutes and opens an inline number field; cumulative tiles open the box editor with confirm; one small details popover can also hold the miss reason.
@@ -95,7 +96,6 @@ State: `planning` · `awaiting approval` · `implementing` · `in review` · `fi
 ## Blockers and questions for the human
 
 - Merge OK for `feat/export` (chunk 9)? Optional standing approval: the Orchestrator merges and pushes logic chunks that passed review and tests and only reports; screen-changing deploys, `production` DB changes and new external services or secrets are still asked first.
-- Hunting tiles: do you sometimes log several hunts at once or for earlier days? (decides whether earlier days' boxes stay locked in the box editor.)
 - Clean-up options for later: archive the finished Paseo workspaces (`db-ping`, `core-schema-plan`, `review-ui-shell`, `ui-shell`).
 
 ## Parked follow-ups
