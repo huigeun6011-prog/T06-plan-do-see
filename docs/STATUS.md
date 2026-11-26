@@ -8,11 +8,13 @@
 
 ## Summary
 
-ALEPH task 6: Plan-Do-See diary (plan/do/see data linked, persisted in a server DB, no login). Working in loop mode with delegation (ADR 0002). Paseo profiles checked: all 6 exist. No code yet; `{{...}}` placeholders in AGENTS.md are still open.
+ALEPH task 6: Plan-Do-See diary (plan/do/see data linked, persisted in a server DB, no login). Working in loop mode with delegation (ADR 0002). Paseo profiles checked: all 6 exist. Task text saved in `docs/TASK.md`. Domain and feature scope are settled (decision log); no code yet; stack, install/test/lint/run commands in AGENTS.md are still open.
 
 ## Next step
 
-Human throws the next chunk (candidates: real plan to track, table design, account signups).
+1. Human confirms the stack and does the signups (Vercel, Neon).
+2. Human sends the doping table (name, duration, meso price, coin cost).
+3. Orchestrator sends the core table design to Planner.
 
 ## In flight
 
@@ -27,16 +29,29 @@ State: `planning` · `awaiting approval` · `implementing` · `in review` · `fi
 - 2026-11-25: loop mode with delegation (ADR 0002). Why: solo learning project; human conceives, Orchestrator vets and writes docs, Implementer/UI build, Reviewer on demand, Free worker off by default.
 - 2026-11-25: soft update and soft delete (new version row, old row `useYN='N'`) instead of UPDATE/DELETE. Why: keeps edit history. Duplicate completion is blocked by a UNIQUE constraint.
 - 2026-11-25: done = all card 1-5 pass criteria and the completion checklist met, plus a final Reviewer run with no open high/medium findings; the Orchestrator separately verifies live behavior. Why: an independent reviewer judges severity better than a fixed list.
-
 - 2026-11-26: ROLES.md aligned with loop mode (delegation prompt instead of approved plan, Reviewer on demand, Free worker off by default). Why: it still described the per-task plan flow of ADR 0001. Profile table checked against Paseo: unchanged.
+- 2026-11-26: the real plan to track is the owner's weekly MapleStory boss routine (4 characters, a 5th in winter). The core is domain-neutral; Maple specifics are attributes and tags. Why: it is what the human actually does and has no interest in another topic; card 1 lists game practice. Features beyond the pass criteria are allowed when useful and fitting; they are not dropped just for not matching the task.
+- 2026-11-26: each (character, boss) entry has clear minutes (always a number, 1 for under a minute), reward in meso, party size, doping names (default = base doping) and a free memo. Difficulty is part of the boss name, no field. Account-level monthly entries (Dragon Island) have no character. Why: clear time differs per character; party size is used to filter suggestions.
+- 2026-11-26: weekly reset Thursday 00:00 KST, monthly reset 1st 00:00 KST. Why: the game's resets; the late count in the retro needs a period boundary.
+- 2026-11-26: the goal is to clear every weekly boss; when time is short, pick the set with the highest net meso. Suggestions are advisory, never enforced. Why: the human's stated goal.
+- 2026-11-26: doping is preset per entry by the human; the tool does not decide doping, simulate timers, compute damage efficiency or advise swaps. Why: an 8-minute doping can cover a 20-minute clear, so a timer rule would be wrong, and damage needs game internals.
+- 2026-11-26: net meso = reward minus doping meso price. Cost method is selectable: full price per boss or time-proportional (default, labeled an estimate). Coin dopings have no meso price. Why: shared doping makes full price count twice.
+- 2026-11-26: monthly coin forecast = coins per activation (input per character) x weekly activations (estimate = ceil(minutes of entries using that doping / 30), overridable) x number of Thursdays in the month, compared with coins earned (input). Why: the human runs out of coins late in the month and wants to know in advance.
+- 2026-11-26: no "can I finish this week" forecast. Why: it needs daily available minutes typed in every day; the task does not require it.
+- 2026-11-26: build order: core (cards 1-5), overview per character, "today" suggestion, coin forecast. Why: the first two satisfy the task; the rest is the part the human wants to dig into and must not block it.
+- 2026-11-26: automatic clear-time measurement is planned for later, not now. Method: browser screen share of the game window, analysed in the browser, no frames sent to the server; the boss and difficulty come from the waiting-room map name and the time from the in-game timer. Needs sample screenshots or a recording first, then a spike. Manual entry stays as the fallback and both feed one run record. Why: the human wants full automation, accepts about one week, and does not want to rebuild an external service by hand. No scraping of maple-boss.com (its terms, article 7, forbid it).
 
 ## Parked / undecided
 
 - Stack is only a proposal: Next.js (React) + Vercel Hobby + Neon Free + plain SQL. Not confirmed.
 - Signups (Vercel, Neon) not done; check whether Neon asks for a card.
-- Which real plan the human will track (workout / study / work / game practice / ALEPH).
-- Table layout (plan versions, todo, run record, completion record; retro computed on read).
-- Placeholders and TBD commands in AGENTS.md.
+- Doping table is missing: name, duration, meso price, coin cost.
+- Table layout (plan versions, todo, run record, completion record; retro computed on read). Open points: one plan per week with the character as a todo attribute (leaning) versus one plan per character; daily 30-minute hunting as one todo per day (proposed, not confirmed).
+- What goes into the reward field: net of doping cost or crystal price only. The tool reads the value as entered (proposal).
+- Auto clear-time: samples needed (waiting room, in-battle timer, clear screen for a few bosses; game resolution, window mode). OCR library choice needs an ADR.
+- `docs/TASK.md` is untracked: commit it or not (it copies course text; keep it out if the repo becomes public).
+- Whether a Maple boss routine counts as "game practice" for card 1 is the author's reading; ask the instructor if in doubt.
+- Placeholders and TBD commands in AGENTS.md (install, test, lint, run).
 
 ## Blockers and questions for the human
 

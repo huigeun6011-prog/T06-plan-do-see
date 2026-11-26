@@ -1,4 +1,4 @@
-# {{PROJECT_NAME}} — Agent Instructions
+# Plan-Do-See Diary — Agent Instructions
 
 Single source of truth for every AI agent in this repo (Claude Code, Codex, Antigravity, …).
 `CLAUDE.md` only points here. Talk to the human in the language they use; write repo files in English unless told otherwise.
@@ -16,7 +16,7 @@ Single source of truth for every AI agent in this repo (Claude Code, Codex, Anti
 
 ## 2. Project snapshot
 
-- **What:** {{DESCRIPTION}}
+- **What:** Plan-Do-See diary (ALEPH task 6, text in `docs/TASK.md`): plan, todo, run record and retro linked in a server DB, no login. First real data: the owner's weekly MapleStory boss routine. Details in `docs/PROJECT.md`.
 - **Stack:** {{STACK}}
 - **Install:** `{{INSTALL_CMD}}`
 - **Test:** `{{TEST_CMD}}`
