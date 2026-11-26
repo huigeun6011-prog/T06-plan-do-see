@@ -49,7 +49,6 @@ State: `planning` · `awaiting approval` · `implementing` · `in review` · `fi
 - Table layout (plan versions, todo, run record, completion record; retro computed on read). Open points: one plan per week with the character as a todo attribute (leaning) versus one plan per character; daily 30-minute hunting as one todo per day (proposed, not confirmed).
 - What goes into the reward field: net of doping cost or crystal price only. The tool reads the value as entered (proposal).
 - Auto clear-time: samples needed (waiting room, in-battle timer, clear screen for a few bosses; game resolution, window mode). OCR library choice needs an ADR.
-- `docs/TASK.md` is untracked: commit it or not (it copies course text; keep it out if the repo becomes public).
 - Whether a Maple boss routine counts as "game practice" for card 1 is the author's reading; ask the instructor if in doubt.
 - Placeholders and TBD commands in AGENTS.md (install, test, lint, run).
 
