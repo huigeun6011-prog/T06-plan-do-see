@@ -4,6 +4,7 @@ type Row = Record<string, unknown>;
 
 export interface SqlClient {
   (strings: TemplateStringsArray, ...values: unknown[]): Promise<Row[]>;
+  query(text: string, params: unknown[]): Promise<Row[]>;
   transaction(queries: (sql: NeonQueryFunctionInTransaction<false, false>) => NeonQueryInTransaction[]): Promise<Row[][]>;
 }
 

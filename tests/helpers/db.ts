@@ -35,6 +35,7 @@ export function useTestDatabase() {
   return Object.assign(
     (strings: TemplateStringsArray, ...values: unknown[]) => safeQuery(sql(strings, ...values)),
     {
+      query: (text: string, params: unknown[]) => safeQuery(sql.query(text, params)),
       transaction: (queries: Parameters<SqlClient["transaction"]>[0]) => safeQuery(sql.transaction(queries)),
     },
   );
