@@ -6,7 +6,7 @@ describe("httpsSrc", () => {
     expect(httpsSrc("HTTPS://x.com/a.png")).toBe("https://x.com/a.png");
   });
   it("rejects everything else", () => {
-    for (const s of [undefined, "", "https://", "http://x.com/a.png", "javascript:alert(1)", "data:image/png;base64,AA", "//x.com/a.png", "not a url"]) {
+    for (const s of [undefined, "", "https://", "http://x.com/a.png", "javascript:alert(1)", "data:image/png;base64,AA", "//x.com/a.png", "not a url", "https://user:pass@x.com/a.png", "https://user@x.com/a.png"]) {
       expect(httpsSrc(s)).toBeNull();
     }
   });
