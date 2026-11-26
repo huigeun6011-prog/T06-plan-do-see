@@ -29,6 +29,10 @@ Update this file whenever structure, components or conventions change.
 
 The real app (plans, todos, run records, retro) is not built yet; see `docs/PROJECT.md` and `docs/ROADMAP.md`.
 
+## Data model
+
+Five tables (`game_character`, `entry`, `plan`, `todo`, `run_record`) and the view `todo_state`; details in `docs/plans/0001-core-schema.md`, decision in ADR 0004. Versioned: `plan`, `entry`. Done state and retro numbers are derived. Not built yet; `db/ping.sql` is the only table in the database so far.
+
 ## Data flow
 
 Browser -> Vercel (Next.js server code) -> Neon Postgres over HTTP (`@neondatabase/serverless`). Server code reads `DATABASE_URL`; the browser never sees it. Forms post to a route handler, which validates, inserts with a parameterized query and redirects; pages are rendered on demand from the database, so data survives refresh and restart.
@@ -51,3 +55,4 @@ Browser -> Vercel (Next.js server code) -> Neon Postgres over HTTP (`@neondataba
 | Neon (Postgres) | Server database | ADR 0003 |
 | Vercel (Hobby) | Hosting; connected to the GitHub repo, a push to `main` deploys to production | ADR 0003 |
 | Vitest | Tests | ADR 0003 |
+| `@anthropic-ai/sdk` (planned) | AI recap, server-side only | ADR 0005 |

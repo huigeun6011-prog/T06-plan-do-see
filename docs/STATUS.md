@@ -12,17 +12,16 @@ ALEPH task 6: Plan-Do-See diary (plan/do/see data linked, persisted in a server 
 
 ## Next step
 
-1. Human sends the doping table (at home, around 18:00).
-2. Orchestrator reviews Planner's table design, explains it to the human in Korean, settles open points, then records it as an ADR and sends the first build chunk to Implementer.
-2. Human sends the doping table (name, duration, meso price, coin cost) from home.
-3. Orchestrator sends the core table design to Planner.
+1. Implementer builds chunks 1-2 of `docs/plans/0001-core-schema.md` (schema on `dev` plus test helper, then Seoul time helpers); the Orchestrator reviews, then the human OKs the merge.
+2. Human sends the doping table and the boss lists when home (around 18:00).
+3. Next chunks 3-8 follow in the order of the plan; the AI recap (chunk 11) waits for the API key.
 
 ## In flight
 
 | Task | Plan | Profile | Workspace / branch | State |
 |---|---|---|---|---|
 | DB connection check page (throwaway) | none; delegation prompt only | Implementer | `feat/db-ping` (`3c8519a`), workspace `wks_4bb427a12459055e` | merged to `main` (`ef09043`), deployed; worktree can be archived |
-| Core table design (no doping) | prompt only; result comes back in the final message | Planner | `docs/core-schema-plan`, workspace `wks_3be368cacaae8028` | planning |
+| Core table design (no doping) | `docs/plans/0001-core-schema.md` | Planner | `docs/core-schema-plan`, workspace `wks_3be368cacaae8028` | done; worktree can be archived |
 
 State: `planning` · `awaiting approval` · `implementing` · `in review` · `fixing` · `blocked` · `ready to merge`
 
@@ -51,11 +50,15 @@ State: `planning` · `awaiting approval` · `implementing` · `in review` · `fi
 - 2026-11-26: one plan per week; the character is a todo attribute. Why: the human's choice; filtering covers the per-character view.
 - 2026-11-26: hunting is one weekly todo with a target count (6 or more per week) that accumulates, not seven daily todos. Each hunt is one run record, at most one per todo per day (unique on todo and Seoul date), which also blocks double-click duplicates. The todo counts as done at 6. Expected minutes of such a todo = minutes per unit x target. Why: the human only needs 6 hunts a week and often skips days.
 - 2026-11-26: the reward field holds the crystal price only for now; doping cost is not subtracted yet. Why: the human finds the doping cost hard to attribute; revisit when the doping table arrives. This narrows the earlier net-meso decision.
+- 2026-11-26: data model settled (ADR 0004, plan `docs/plans/0001-core-schema.md`). Plans are weekly, monthly or event (events have their own name, start and end; achievement is tracked per plan, never mixed). Recurring tasks are registrations (weekly or monthly); a non-repeating task is a todo inside an event. Deadlines are clean instants, shown as e.g. "Wed 24:00". Cumulative todos take a target count, set the day's units absolutely, and may be added by the user. Miss reason is a 200-character free text on the todo. Why: the human's answers on events, recurrence and deadlines; the Planner's design was amended accordingly.
+- 2026-11-26: retro improvement comes from an AI recap through the Anthropic API (ADR 0005): button only, one stored result per plan, daily cap, key only in server env, AI never computes numbers, apply actions limited to a whitelist, built last. The human has an API account and will buy usage; the key is not entered yet. A manual improvement line always works. This replaces the earlier idea of rule-based generation. Why: the human wants the AI to judge from the reasons; my earlier cost objection no longer applies, the abuse and key objections are handled by the cap and server-only key. Login comes in task 7.
+- 2026-11-26: neon branches `dev` and `test` created (`neon branches create`, no secrets printed). Development uses `dev`, tests use `test`; `production` holds real data. Expiry of the two branches is unverified. Why: tests and local runs must not touch real data.
+- 2026-11-26: the human treats the pass criteria as guidelines and may break them; the Orchestrator keeps judging what is right and may reject ideas. Improvement (T06-C33) is still designed in because it costs little.
 
 ## Parked / undecided
 
-- Doping table is missing: name, duration, meso price, coin cost.
-- Table layout (plan versions, todo with target count, run record, completion record; retro computed on read): to be designed by Planner after the doping table arrives.
+- Doping table is missing: name, duration, meso price, coin cost (human, around 18:00); not needed before the core is built.
+- Boss lists per character as text (names, clear minutes, party size, memo); photos cannot be read by workers.
 - Auto clear-time: samples needed (waiting room, in-battle timer, clear screen for a few bosses; game resolution, window mode). OCR library choice needs an ADR.
 - Whether a Maple boss routine counts as "game practice" for card 1 is the author's reading; ask the instructor if in doubt.
 - Delete the connection check page and the `ping` table once the real app exists.
