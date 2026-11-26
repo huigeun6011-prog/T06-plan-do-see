@@ -13,7 +13,7 @@ ALEPH task 6: Plan-Do-See diary (plan/do/see data linked, persisted in a server 
 ## Next step
 
 1. Human sends the doping table (at home, around 18:00).
-2. Orchestrator sends the core table design to Planner, then the core build to Implementer.
+2. Orchestrator reviews Planner's table design, explains it to the human in Korean, settles open points, then records it as an ADR and sends the first build chunk to Implementer.
 2. Human sends the doping table (name, duration, meso price, coin cost) from home.
 3. Orchestrator sends the core table design to Planner.
 
@@ -21,7 +21,8 @@ ALEPH task 6: Plan-Do-See diary (plan/do/see data linked, persisted in a server 
 
 | Task | Plan | Profile | Workspace / branch | State |
 |---|---|---|---|---|
-| DB connection check page (throwaway) | none; delegation prompt only | Implementer | `feat/db-ping` (`3c8519a`), workspace `wks_4bb427a12459055e` | merged to `main` (`ef09043`), deployed |
+| DB connection check page (throwaway) | none; delegation prompt only | Implementer | `feat/db-ping` (`3c8519a`), workspace `wks_4bb427a12459055e` | merged to `main` (`ef09043`), deployed; worktree can be archived |
+| Core table design (no doping) | prompt only; result comes back in the final message | Planner | `docs/core-schema-plan`, workspace `wks_3be368cacaae8028` | planning |
 
 State: `planning` · `awaiting approval` · `implementing` · `in review` · `fixing` · `blocked` · `ready to merge`
 
