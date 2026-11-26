@@ -48,16 +48,17 @@ export async function completeTodo(
       `,
       tx`
         INSERT INTO run_record (todo_id, run_date, units, actual_minutes, started_at, ended_at)
-        SELECT ${id}, ${runDate}, ${details.units}, ${details.actual_minutes}, ${details.started_at}, ${details.ended_at}
+        SELECT ${id}, ${runDate}, COALESCE(${details.units}::int, 1),
+          ${details.actual_minutes}, ${details.started_at}, ${details.ended_at}
         WHERE current_setting('pds.run_target_count', true) <> ''
           AND (current_setting('pds.run_target_count', true) <> '1' OR (
-            ${details.units}::int = 1 AND NOT EXISTS (
+            COALESCE(${details.units}::int, 1) = 1 AND NOT EXISTS (
               SELECT 1 FROM run_record
               WHERE todo_id = ${id} AND run_date <> ${runDate} AND use_yn = 'Y' AND done
             )
           ))
         ON CONFLICT (todo_id, run_date) WHERE use_yn = 'Y'
-        DO UPDATE SET done = true, units = EXCLUDED.units,
+        DO UPDATE SET done = true, units = COALESCE(${details.units}::int, run_record.units),
           actual_minutes = COALESCE(EXCLUDED.actual_minutes, run_record.actual_minutes),
           started_at = COALESCE(EXCLUDED.started_at, run_record.started_at),
           ended_at = COALESCE(EXCLUDED.ended_at, run_record.ended_at)
@@ -66,7 +67,7 @@ export async function completeTodo(
       tx`SELECT * FROM todo_state WHERE id = ${id}`,
     ], { isolationLevel: "ReadCommitted" });
     if (target.target_count === "") throw new ValidationError("todo_id", "Choose an active todo.");
-    if (target.target_count === "1" && details.units !== 1) {
+    if (target.target_count === "1" && details.units !== null && details.units !== 1) {
       throw new ValidationError("units", "Use one unit for this todo.");
     }
     if (!run) return { alreadyDone: true };

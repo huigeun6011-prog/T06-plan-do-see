@@ -6,7 +6,7 @@ import {
   validatePlanKind, ValidationError,
 } from "../lib/validate";
 
-type PlanRow = PlanFields & {
+export type PlanRow = PlanFields & {
   id: string;
   root_id: string;
   period_kind: PlanKind;
@@ -24,11 +24,18 @@ export type Plan = Omit<PlanRow, "starts_at" | "ends_at" | "created_at"> & {
 export type PeriodTarget = "current" | "next";
 export type PlanEditResult = { id: string } | { conflict: true };
 
-function serialize(row: PlanRow): Plan {
+export function serializePlan(row: PlanRow): Plan {
   return {
-    ...row,
+    id: row.id,
+    root_id: row.root_id,
+    period_kind: row.period_kind,
+    title: row.title,
     starts_at: row.starts_at.toISOString(),
     ends_at: row.ends_at.toISOString(),
+    priority: row.priority,
+    success_criteria: row.success_criteria,
+    expected_minutes: row.expected_minutes,
+    use_yn: row.use_yn,
     created_at: row.created_at.toISOString(),
   };
 }
@@ -82,14 +89,14 @@ export async function ensurePeriodPlan(
     )
     SELECT * FROM new_plan
   ` as PlanRow[];
-  if (inserted) return serialize(inserted);
+  if (inserted) return serializePlan(inserted);
 
   // A separate statement sees a concurrent winner that was invisible to the insert's snapshot.
   const [current] = await sql`
     SELECT * FROM plan WHERE period_kind = ${periodKind} AND starts_at = ${startsAt} AND use_yn = 'Y'
   ` as PlanRow[];
   if (!current) throw new Error("Could not find the current period plan.");
-  return serialize(current);
+  return serializePlan(current);
 }
 
 export async function generateTodos(sql: SqlClient, planRootId: string): Promise<void> {
@@ -133,7 +140,7 @@ export async function createEventPlan(sql: SqlClient, input: EventPlanInput): Pr
     FROM n
     RETURNING *
   ` as PlanRow[];
-  return serialize(row);
+  return serializePlan(row);
 }
 
 export async function editPlan(
@@ -183,13 +190,13 @@ export async function editPlan(
 export async function getPlan(sql: SqlClient, rootId: string): Promise<Plan | null> {
   const root = validateId(rootId, "root_id");
   const [row] = await sql`SELECT * FROM plan WHERE root_id = ${root} AND use_yn = 'Y'` as PlanRow[];
-  return row ? serialize(row) : null;
+  return row ? serializePlan(row) : null;
 }
 
 export async function getPlanHistory(sql: SqlClient, rootId: string): Promise<Plan[]> {
   const root = validateId(rootId, "root_id");
   const rows = await sql`SELECT * FROM plan WHERE root_id = ${root} ORDER BY id` as PlanRow[];
-  return rows.map(serialize);
+  return rows.map(serializePlan);
 }
 
 export async function listPlans(
@@ -204,5 +211,5 @@ export async function listPlans(
       AND (${endedBefore}::timestamptz IS NULL OR ends_at < ${endedBefore})
     ORDER BY starts_at DESC, id
   ` as PlanRow[];
-  return rows.map(serialize);
+  return rows.map(serializePlan);
 }

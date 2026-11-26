@@ -95,7 +95,7 @@ FROM todo t
 LEFT JOIN (
   SELECT todo_id,
          COALESCE(sum(units) FILTER (WHERE done), 0)::int AS done_n,
-         COALESCE(sum(actual_minutes), 0)::int AS actual
+         COALESCE(sum(actual_minutes) FILTER (WHERE done), 0)::int AS actual
   FROM run_record WHERE use_yn = 'Y' GROUP BY todo_id
 ) r ON r.todo_id = t.id
 WHERE t.use_yn = 'Y';

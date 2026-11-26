@@ -239,10 +239,10 @@ export function validateRunDetails(input: RunDetails): RunDetails {
 }
 
 export function validateCompletion({
-  units = 1, actual_minutes = null, started_at = null, ended_at = null,
+  units, actual_minutes = null, started_at = null, ended_at = null,
 }: CompleteTodoInput = {}) {
   return {
-    units: integer(units, "units", 1, 1000),
+    units: units === undefined ? null : integer(units, "units", 1, 1000),
     ...validateRunDetails({ actual_minutes, started_at, ended_at }),
   };
 }
@@ -257,4 +257,12 @@ export function validateRunDate(value: unknown): string {
 
 export function validateMissReason(reason: unknown): string | null {
   return reason === null ? null : text(reason, "miss_reason", 0, 200) || null;
+}
+
+export function validateRetroHistoryLimit(value: unknown): number {
+  return integer(value, "limit", 1, Number.MAX_SAFE_INTEGER);
+}
+
+export function validateImprovementText(value: unknown): string {
+  return text(value, "text", 1, 200);
 }

@@ -123,7 +123,7 @@ describe("core schema on the test branch", () => {
       SELECT done_n, actual_minutes, blocked, is_done FROM todo_state WHERE id = ${todo.id}
     `;
     await expect(readState()).resolves.toEqual([
-      { done_n: 0, actual_minutes: 15, blocked: true, is_done: false },
+      { done_n: 0, actual_minutes: 0, blocked: true, is_done: false },
     ]);
     const complete = () => sql`
       INSERT INTO run_record (todo_id, run_date, units)
