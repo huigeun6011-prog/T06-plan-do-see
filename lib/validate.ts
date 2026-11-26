@@ -218,3 +218,43 @@ export function validateTodo({
     target_count: todoFields.target_count(target_count),
   };
 }
+
+export type RunDetails = {
+  actual_minutes: number | null;
+  started_at: Date | null;
+  ended_at: Date | null;
+};
+
+export type CompleteTodoInput = Partial<RunDetails> & { units?: number };
+
+export function validateRunDetails(input: RunDetails): RunDetails {
+  const actual_minutes = input.actual_minutes === null
+    ? null : integer(input.actual_minutes, "actual_minutes", 0, 10000);
+  const started_at = input.started_at === null ? null : validateDate(input.started_at, "started_at");
+  const ended_at = input.ended_at === null ? null : validateDate(input.ended_at, "ended_at");
+  if (started_at && ended_at && ended_at < started_at) {
+    throw new ValidationError("ended_at", "End must be at or after start.");
+  }
+  return { actual_minutes, started_at, ended_at };
+}
+
+export function validateCompletion({
+  units = 1, actual_minutes = null, started_at = null, ended_at = null,
+}: CompleteTodoInput = {}) {
+  return {
+    units: integer(units, "units", 1, 1000),
+    ...validateRunDetails({ actual_minutes, started_at, ended_at }),
+  };
+}
+
+export function validateRunDate(value: unknown): string {
+  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) && !value.startsWith("0000")) {
+    const date = new Date(`${value}T00:00:00Z`);
+    if (Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value) return value;
+  }
+  throw new ValidationError("run_date", "Use a valid date in YYYY-MM-DD.");
+}
+
+export function validateMissReason(reason: unknown): string | null {
+  return reason === null ? null : text(reason, "miss_reason", 0, 200) || null;
+}

@@ -18,7 +18,7 @@ type TodoRow = Omit<ReturnType<typeof validateTodo>, "due_at"> & {
 };
 export type Todo = Omit<TodoRow, "due_at" | "created_at"> & { due_at: string; created_at: string };
 type TodoProgress = { done_n: number; actual_minutes: number; blocked: boolean; is_done: boolean };
-type TodoStateRow = TodoRow & TodoProgress;
+export type TodoStateRow = TodoRow & TodoProgress;
 export type TodoState = Todo & TodoProgress;
 
 export const TODO_SCOPE_PREDICATES = Object.freeze({
@@ -45,7 +45,7 @@ export type TodoQuery = {
 type WeekPlan = { plan: Plan; todos: TodoState[] };
 export type WeekView = { weekly: WeekPlan; monthly: WeekPlan };
 
-function serialize<Row extends TodoRow>(row: Row) {
+export function serializeTodo<Row extends TodoRow>(row: Row) {
   const { due_at, created_at, ...fields } = row;
   return { ...fields, due_at: due_at.toISOString(), created_at: created_at.toISOString() };
 }
@@ -70,7 +70,7 @@ export async function createTodo(sql: SqlClient, planRootId: string, input: Todo
       RETURNING *
     ` as TodoRow[];
     if (!row) throw new ValidationError("plan_id", "Choose a current plan.");
-    return serialize(row);
+    return serializeTodo(row);
   } catch (error) {
     throwTodoError(error);
   }
@@ -79,7 +79,7 @@ export async function createTodo(sql: SqlClient, planRootId: string, input: Todo
 export async function getTodo(sql: SqlClient, id: string): Promise<TodoState | null> {
   const todoId = validateId(id, "id");
   const [row] = await sql`SELECT * FROM todo_state WHERE id = ${todoId}` as TodoStateRow[];
-  return row ? serialize(row) : null;
+  return row ? serializeTodo(row) : null;
 }
 
 export async function updateTodo(sql: SqlClient, id: string, patch: TodoPatch): Promise<Todo | null> {
@@ -91,7 +91,7 @@ export async function updateTodo(sql: SqlClient, id: string, patch: TodoPatch): 
       `UPDATE todo SET ${assignments.join(", ")} WHERE id = $1 AND use_yn = 'Y' RETURNING *`,
       [todoId, ...fields.map(([, value]) => value)],
     ) as TodoRow[];
-    return row ? serialize(row) : null;
+    return row ? serializeTodo(row) : null;
   } catch (error) {
     throwTodoError(error);
   }
@@ -137,7 +137,7 @@ export async function listTodos(sql: SqlClient, query: TodoQuery, now: Date): Pr
      LIMIT $8::int OFFSET $9::bigint`,
     [plan, instant, characterId === undefined, character, cleanTag, cleanPriority, q, page.limit, page.offset],
   ) as TodoStateRow[];
-  return rows.map(serialize);
+  return rows.map(serializeTodo);
 }
 
 export async function listWeekView(sql: SqlClient, now: Date): Promise<WeekView> {
@@ -150,7 +150,7 @@ export async function listWeekView(sql: SqlClient, now: Date): Promise<WeekView>
     ORDER BY t.due_at ASC, COALESCE(current_entry.sort_order, original_entry.sort_order, 0) ASC, t.id ASC
   ` as TodoStateRow[];
   return {
-    weekly: { plan: weekly, todos: rows.filter((row) => row.plan_id === weekly.root_id).map(serialize) },
-    monthly: { plan: monthly, todos: rows.filter((row) => row.plan_id === monthly.root_id).map(serialize) },
+    weekly: { plan: weekly, todos: rows.filter((row) => row.plan_id === weekly.root_id).map(serializeTodo) },
+    monthly: { plan: monthly, todos: rows.filter((row) => row.plan_id === monthly.root_id).map(serializeTodo) },
   };
 }
