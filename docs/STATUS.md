@@ -12,15 +12,15 @@ ALEPH task 6: Plan-Do-See diary (plan/do/see data linked, persisted in a server 
 
 ## Next step
 
-1. Orchestrator runs Neon setup (steps 1-3 of Neon's prompt) in the main folder, then sends the connection-check page to Implementer in a worktree.
-2. Human sends the doping table (name, duration, meso price, coin cost).
+1. Wait for Implementer's report on the connection check page; review it, then the Orchestrator deploys it to Vercel and verifies it in a private window.
+2. Human sends the doping table (name, duration, meso price, coin cost) from home.
 3. Orchestrator sends the core table design to Planner.
 
 ## In flight
 
 | Task | Plan | Profile | Workspace / branch | State |
 |---|---|---|---|---|
-| — | — | — | — | — |
+| DB connection check page (throwaway) | none; delegation prompt only | Implementer | `feat/db-ping`, workspace `wks_4bb427a12459055e` | implementing |
 
 State: `planning` · `awaiting approval` · `implementing` · `in review` · `fixing` · `blocked` · `ready to merge`
 
@@ -41,6 +41,7 @@ State: `planning` · `awaiting approval` · `implementing` · `in review` · `fi
 - 2026-11-26: build order: core (cards 1-5), overview per character, "today" suggestion, coin forecast. Why: the first two satisfy the task; the rest is the part the human wants to dig into and must not block it.
 - 2026-11-26: automatic clear-time measurement is planned for later, not now. Method: browser screen share of the game window, analysed in the browser, no frames sent to the server; the boss and difficulty come from the waiting-room map name and the time from the in-game timer. Needs sample screenshots or a recording first, then a spike. Manual entry stays as the fallback and both feed one run record. Why: the human wants full automation, accepts about one week, and does not want to rebuild an external service by hand. No scraping of maple-boss.com (its terms, article 7, forbid it).
 - 2026-11-26: stack confirmed (ADR 0003): Next.js (React) on Vercel Hobby, Neon Free Postgres only, plain SQL with parameters, no ORM. TypeScript, plain CSS and Vitest are Orchestrator defaults. Why: server-side layer keeps the connection string off the browser; SQL-level guarantees are what the task checks. Signups done (Neon asked for no card).
+- 2026-11-26: Neon set up in the main folder (`neon init`, `neon login`, `neon deploy`): Postgres only, `.env.local` pulled and git-ignored, config committed (`1c6d860`). `neon init` also reported configuring agent plugins or skills outside the repo (claude-code, codex, vscode, others); not inspected. Connection check page delegated to Implementer in a worktree; `.env.local` copied there without reading it.
 
 ## Parked / undecided
 
