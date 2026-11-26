@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { createCharacter } from "../db/characters";
 import type { SqlClient } from "../db/client";
-import { createEntry } from "../db/entries";
+import { createEntry, deleteEntry, editEntry, getEntryHistory, setEntryOrder } from "../db/entries";
 import { createEventPlan, ensureCurrentPlans } from "../db/plans";
 import { createTodo, deleteTodo, getTodo, listTodos, listWeekView, updateTodo, type TodoScope } from "../db/todos";
 import type { TodoSort } from "../lib/todo-sort";
@@ -220,5 +220,31 @@ describe("todo data access", () => {
     const view = await listWeekView(sql, now);
     expect(view.weekly.todos).toHaveLength(1001);
     expect(view.monthly.todos).toEqual([]);
+  });
+
+  it("uses the current registration order and falls back to the root order after deletion", async () => {
+    const first = await createEntry(sql, { ...entry, title: "First", sort_order: 1 });
+    await createEntry(sql, { ...entry, title: "Second", sort_order: 2 });
+    const titles = async () => (await listWeekView(sql, now)).weekly.todos.map(({ title }) => title);
+    await expect(titles()).resolves.toEqual(["First", "Second"]);
+
+    await expect(editEntry(sql, first.root_id, first.id, { ...entry, title: "First", sort_order: 3 }))
+      .resolves.toHaveProperty("id");
+    await expect(titles()).resolves.toEqual(["Second", "First"]);
+    const before = await getEntryHistory(sql, first.root_id);
+    expect(before).toHaveLength(2);
+
+    await expect(setEntryOrder(sql, first.root_id, 0)).resolves.toBe(true);
+    await expect(titles()).resolves.toEqual(["First", "Second"]);
+    await expect(getEntryHistory(sql, first.root_id)).resolves.toEqual([before[0], { ...before[1], sort_order: 0 }]);
+
+    await expect(setEntryOrder(sql, first.root_id, 4)).resolves.toBe(true);
+    await expect(titles()).resolves.toEqual(["Second", "First"]);
+    await deleteEntry(sql, first.root_id);
+    await expect(titles()).resolves.toEqual(["First", "Second"]);
+    const after = await listWeekView(sql, now);
+    await expect(listWeekView(sql, now)).resolves.toEqual(after);
+    await expect(setEntryOrder(sql, first.root_id, 5)).resolves.toBe(false);
+    await expect(setEntryOrder(sql, "99999", 5)).resolves.toBe(false);
   });
 });

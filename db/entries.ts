@@ -1,5 +1,5 @@
 import { type SqlClient, violatesConstraint } from "./client";
-import { type EntryInput, type PeriodKind, validateEntry, validateId, validatePeriodKind, ValidationError } from "../lib/validate";
+import { type EntryInput, type PeriodKind, validateEntry, validateId, validatePeriodKind, validateSortOrder, ValidationError } from "../lib/validate";
 
 type EntryRow = ReturnType<typeof validateEntry> & {
   id: string;
@@ -87,6 +87,16 @@ export async function deleteEntry(sql: SqlClient, rootId: string): Promise<boole
   const root = validateId(rootId, "root_id");
   const rows = await sql`
     UPDATE entry SET use_yn = 'N' WHERE root_id = ${root} AND use_yn = 'Y'
+    RETURNING id
+  `;
+  return rows.length > 0;
+}
+
+export async function setEntryOrder(sql: SqlClient, rootId: string, order: number): Promise<boolean> {
+  const root = validateId(rootId, "root_id");
+  const sortOrder = validateSortOrder(order);
+  const rows = await sql`
+    UPDATE entry SET sort_order = ${sortOrder} WHERE root_id = ${root} AND use_yn = 'Y'
     RETURNING id
   `;
   return rows.length > 0;

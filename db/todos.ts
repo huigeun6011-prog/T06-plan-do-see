@@ -144,9 +144,10 @@ export async function listWeekView(sql: SqlClient, now: Date): Promise<WeekView>
   const { weekly, monthly } = await ensureCurrentPlans(sql, now);
   const rows = await sql`
     SELECT t.* FROM todo_state t
-    LEFT JOIN entry e ON e.id = t.entry_id
+    LEFT JOIN entry current_entry ON current_entry.root_id = t.entry_id AND current_entry.use_yn = 'Y'
+    LEFT JOIN entry original_entry ON original_entry.id = t.entry_id
     WHERE t.plan_id IN (${weekly.root_id}, ${monthly.root_id})
-    ORDER BY t.due_at ASC, COALESCE(e.sort_order, 0) ASC, t.id ASC
+    ORDER BY t.due_at ASC, COALESCE(current_entry.sort_order, original_entry.sort_order, 0) ASC, t.id ASC
   ` as TodoStateRow[];
   return {
     weekly: { plan: weekly, todos: rows.filter((row) => row.plan_id === weekly.root_id).map(serialize) },
