@@ -1,7 +1,12 @@
-import { applySchema, connectSchemaDatabase } from "./schema.mjs";
+import { applySchema, connectSchemaDatabase, SchemaConfigurationError } from "./schema.mjs";
 
 try {
-  const sql = connectSchemaDatabase();
+  const args = process.argv.slice(2);
+  const production = args.length === 1 && args[0] === "--production";
+  if (args.length && !production) {
+    throw new SchemaConfigurationError("The only supported argument is --production.");
+  }
+  const sql = connectSchemaDatabase({ production });
   await applySchema(sql);
   const relations = await sql`
     SELECT table_name, table_type
@@ -16,6 +21,8 @@ try {
   }
 } catch (error) {
   // Neon connection failures may contain connection details.
-  console.error("Could not apply or inspect the dev schema.");
+  console.error(error instanceof SchemaConfigurationError
+    ? error.message
+    : "Could not apply or inspect the schema.");
   process.exitCode = 1;
 }

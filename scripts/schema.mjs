@@ -1,26 +1,55 @@
 import { readFile } from "node:fs/promises";
 import { NeonDbError, neon } from "@neondatabase/serverless";
 
-/** @param {{ test?: boolean }} [options] */
-export function connectSchemaDatabase({ test = false } = {}) {
-  // Only use the branch URLs supplied in this worktree's file.
+export class SchemaConfigurationError extends Error {}
+
+/** @typedef {{ test?: boolean, production?: boolean }} SchemaDatabaseOptions */
+
+/**
+ * @param {Record<string, string | undefined>} env
+ * @param {SchemaDatabaseOptions} [options]
+ */
+export function selectSchemaDatabase(env, { test = false, production = false } = {}) {
+  const mode = test ? "test" : production ? "production" : "dev";
+  const marker = mode === "test" ? "TEST_NEON_BRANCH" : "NEON_BRANCH";
+  if (!env[marker]) {
+    throw new SchemaConfigurationError(`${marker} is missing from .env.local.`);
+  }
+  if (env[marker] !== mode) {
+    throw new SchemaConfigurationError(`${marker} must be exactly "${mode}".`);
+  }
+
+  const primaryUrl = env.DATABASE_URL_UNPOOLED;
+  const primaryHost = directHost(primaryUrl);
+  if (!primaryUrl || !primaryHost) {
+    throw new SchemaConfigurationError("DATABASE_URL_UNPOOLED must be a direct Postgres URL.");
+  }
+  if (mode !== "test") return { mode, url: primaryUrl };
+
+  const testUrl = env.TEST_DATABASE_URL_UNPOOLED;
+  const testHost = directHost(testUrl);
+  if (!testUrl || !testHost || testHost === primaryHost) {
+    throw new SchemaConfigurationError("TEST_DATABASE_URL_UNPOOLED must be a direct Postgres URL on a different host from DATABASE_URL_UNPOOLED.");
+  }
+  return { mode, url: testUrl };
+}
+
+/** @param {SchemaDatabaseOptions} [options] */
+export function connectSchemaDatabase(options) {
+  // Only use the branch markers and URLs supplied in this worktree's file.
+  delete process.env.NEON_BRANCH;
+  delete process.env.TEST_NEON_BRANCH;
   delete process.env.DATABASE_URL_UNPOOLED;
   delete process.env.TEST_DATABASE_URL_UNPOOLED;
-  process.loadEnvFile(".env.local");
-
-  const devUrl = process.env.DATABASE_URL_UNPOOLED;
-  const devHost = directHost(devUrl);
-  if (!devUrl || !devHost) {
-    throw new Error("DATABASE_URL_UNPOOLED must be a direct Postgres URL.");
+  try {
+    process.loadEnvFile(".env.local");
+  } catch {
+    throw new SchemaConfigurationError("Could not load .env.local.");
   }
-  if (!test) return neon(devUrl);
 
-  const testUrl = process.env.TEST_DATABASE_URL_UNPOOLED;
-  const testHost = directHost(testUrl);
-  if (!testUrl || !testHost || testHost === devHost) {
-    throw new Error("TEST_DATABASE_URL_UNPOOLED must be a direct Postgres URL on a different host from dev.");
-  }
-  return neon(testUrl);
+  const { mode, url } = selectSchemaDatabase(process.env, options);
+  if (mode === "production") console.log("Applying schema to production");
+  return neon(url);
 }
 
 /** @param {string | undefined} value */

@@ -6,7 +6,8 @@
     "build": "next build",
     "start": "next start",
     "test": "vitest run",
-    "db:apply": "node scripts/apply-schema.mjs"
+    "db:apply": "node scripts/apply-schema.mjs",
+    "db:apply:production": "node scripts/apply-schema.mjs --production"
   },
   "dependencies": {
     "@neon/config": "^1.14.8",
