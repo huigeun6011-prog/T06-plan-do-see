@@ -6,7 +6,7 @@ import {
   validateTodoPatch, validateTodoPriority, validateTodoTag, ValidationError,
 } from "../lib/validate";
 
-type TodoRow = Omit<ReturnType<typeof validateTodo>, "due_at"> & {
+export type TodoRow = Omit<ReturnType<typeof validateTodo>, "due_at"> & {
   id: string;
   plan_id: string;
   entry_id: string | null;

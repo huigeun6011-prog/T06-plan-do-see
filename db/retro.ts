@@ -134,7 +134,9 @@ export async function getRetroByGroup(
 }
 
 export async function listRetroHistory(
-  sql: SqlClient, { kind, limit = 52 }: { kind?: PlanKind; limit?: number }, now: Date,
+  sql: SqlClient,
+  { kind, limit = 52, needsImprovement = false }: { kind?: PlanKind; limit?: number; needsImprovement?: boolean },
+  now: Date,
 ): Promise<RetroHistoryRow[]> {
   const period = kind === undefined ? null : validatePlanKind(kind);
   const pageSize = validateRetroHistoryLimit(limit);
@@ -145,10 +147,15 @@ export async function listRetroHistory(
      CROSS JOIN (SELECT $2::timestamptz AS as_of) AS clock
      LEFT JOIN todo_state t ON t.plan_id = p.root_id
      WHERE p.use_yn = 'Y' AND ($1::text IS NULL OR p.period_kind = $1)
+       AND (NOT $4::boolean OR (
+         p.ends_at <= as_of AND NOT EXISTS (
+           SELECT 1 FROM todo improvement WHERE improvement.source_plan_id = p.root_id AND improvement.use_yn = 'Y'
+         )
+       ))
      GROUP BY p.id
      ORDER BY p.starts_at DESC, p.id ASC
      LIMIT $3::bigint`,
-    [period, instant, pageSize],
+    [period, instant, pageSize, needsImprovement],
   ) as (PlanRow & TotalsRow)[];
   return rows.map((row) => ({ plan: serializePlan(row), ...totals(row) }));
 }

@@ -262,3 +262,7 @@ export function validateMissReason(reason: unknown): string | null {
 export function validateRetroHistoryLimit(value: unknown): number {
   return integer(value, "limit", 1, Number.MAX_SAFE_INTEGER);
 }
+
+export function validateImprovementText(value: unknown): string {
+  return text(value, "text", 1, 200);
+}
