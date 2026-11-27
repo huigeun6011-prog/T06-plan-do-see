@@ -13,8 +13,8 @@ ALEPH task 6: Plan-Do-See diary for the owner's weekly MapleStory routine (plan,
 ## Next step
 
 Tomorrow, in this order:
-1. Human decides on merging `feat/export` (chunk 9) into `main` and pushing. Note: `/export` will answer with a short generic 500 on the live site until the schema is applied to `production`.
-2. Human sends: the doping table (name, duration, meso price, coin cost), the boss and mission lists as text (names, clear minutes, party size, memo; include missions such as 지하수로 and 앵글러 컴퍼니), and later the character images. 
+1. W1a is being built; then W1b (the screen) by the UI profile, then Reviewer-Codex, then the human looks at it on a local dev server.
+2. The human looks up the general MapleStory knowledge (boss list, crystal prices, doping kinds) and enters it in the app (user input); character images are on hold. 
 3. Start the UI wiring W1 to W5 (see `docs/ROADMAP.md`); apply the UI feedback list below first. Apply the schema to `production` (`npm run db:apply:production`, the human's OK first) before the first wired deploy.
 4. AI recap (chunk 11) waits for the API key; the doping, today-suggestion and coin forecast wait for the doping table.
 
@@ -32,6 +32,7 @@ Tomorrow, in this order:
 | Core chunk 7: retro, grouped retro, history, overview per character (+ two small fixes) | `docs/plans/0001-core-schema.md` (section 8) | Implementer | `feat/retro` (`3ab0520`, stacked on `feat/runs`), same workspace | reviewed and accepted by the Orchestrator (130 tests, build, db:apply on dev); merged to `main` with chunk 8 |
 | Core chunk 8: improvement as a todo in the next plan (manual path), plans needing a retro | `docs/plans/0001-core-schema.md` (section 8), ADR 0005 | Implementer | `feat/improvement` (`f66cda8`, stacked on `feat/retro`), same workspace | reviewed and accepted by the Orchestrator (135 tests, build); merged to `main` (chunks 7-8) with the human's OK |
 | Core chunk 9: export and `contracts/pds-schema-v2.json` | `docs/plans/0001-core-schema.md` (section 7) | Implementer | `feat/export` (`ec5579f`, stacked on `feat/improvement`), same workspace | reviewed and accepted by the Orchestrator (141 tests, build, route is dynamic); merged to `main` with the human's OK (2026-11-27) |
+| W1a: server side of the registrations screen (parser for pasted lines, load, reorder, bulk commit, server actions) | prompt only; types are the contract for W1b | Implementer | `feat/register-server` in workspace `wks_4c20089b9b84758d` | implementing |
 | UI shell on `/preview` with mock data | prompt only (look, components, constraints) | UI | `feat/ui-shell` (`3664a99`), workspace `wks_3256fb9c504da5f0` | merged to `main` (`5761205`) with the human's OK; two Reviewer-Codex rounds, round 2 fixes verified by the Orchestrator; the dev server on port 3010 can be stopped |
 | Review of the UI shell (read only) | `3664a99` | Reviewer-Codex | `review/ui-shell`, workspace `wks_96f047710228dc8d` | round 2 done; findings fixed |
 
@@ -80,6 +81,7 @@ State: `planning` · `awaiting approval` · `implementing` · `in review` · `fi
 - 2026-11-26: hunting boxes: the human logs several hunts at once only on the day they really did them, and never fills earlier days afterwards. Decision: boxes filled by earlier days are locked, only today's boxes are editable, and one confirm sets today's units (matches the backend rule of one run per todo per Seoul day with the count set, not added).
 - 2026-11-27: the Nexon Open API will NOT be used. Why (human): it is slow, and what is needed is general MapleStory knowledge (boss list, crystal prices, doping kinds), not account data; verified that the API offers none of that (only character, union, guild, ranking, history, scheduler and notice data). The human looks the knowledge up and provides it; it is entered as user input (boss and mission registrations, doping catalog). Character images are on hold (probably the human's own characters); placeholders stay. The earlier 'optional game sync' roadmap item is removed.
 - 2026-11-27: chunk 9 merged to `main` (`feat/export`): `GET /export` (one JSON snapshot, attachment, nosniff, generic 500 on errors) and `contracts/pds-schema-v2.json` checked against the database by a test. The live `/export` answers with a short generic 500 until the schema is applied to `production`.
+- 2026-11-27: W1 (registrations screen) started in two steps: W1a server side by the Implementer (pure parser for pasted lines `title / minutes / party / memo`, load and reorder in one atomic statement, all-or-nothing bulk commit, `'use server'` actions returning serializable results with generic errors), then W1b the screen by the UI profile on those types. The kind (boss or mission) is stored as a tag. W1 is built and checked on the `dev` Neon branch only; it is not deployed before the schema is applied to `production` with the human's OK. The week-screen feedback items (boxes, one-line tiles, mission row, minutes input) are applied in W2.
 
 ## Parked / undecided
 
