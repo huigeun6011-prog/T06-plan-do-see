@@ -42,7 +42,7 @@ Open question for the human: edits to a registration change only todos generated
 | Worktree `...\1fzew51o\core-schema` | Implementer's; branch `feat/week-server` (merged); `.env.local` has `dev` and `test`; full `npm test` works here (289 tests at `d64949f`; switch it to the branch you want checked) |
 | Worktrees `db-ping`, `core-schema-plan`, `review-ui-shell` | finished, can be archived |
 | Paseo agents | UI `3a7bf0f3-b95d-4bda-836c-7a00a84c7563` (workspace `wks_3256fb9c504da5f0`), Implementer `65420270-e406-491b-adbd-5aa133fe9272` (workspace `wks_4c20089b9b84758d`); reuse them with `send_agent_prompt`; new work starts with `git switch -c <branch> main` in their worktree |
-| Dev server | `next dev -p 3010` runs in the `ui-shell` worktree against the `dev` DB (started by the Orchestrator; it can outlive its task; find the PID with `netstat` and stop only that PID). The human tries http://localhost:3010/ and `/register` there |
+| Dev server | stopped (2026-11-27, at the human's request). To look at a screen locally start `npm run dev -- -p 3010` inside the `ui-shell` worktree (dev DB); a dev server never ends by itself, so stop it by its PID (`netstat -ano` then stop only that PID) when done |
 | Neon branches | `production` (real), `dev` (development), `test` (tests reset it) |
 | Browser checks | Aside CLI: `aside repl < file.js`; no state survives between calls, so each script starts with `listBrowserTabs()` and `attachBrowserTab(id)` (or `openTab(url)`); read pages with `snapshot(page)` |
 
@@ -56,7 +56,7 @@ Open question for the human: edits to a registration change only todos generated
 
 ## In flight
 
-No worker agent is running (the dev server on port 3010 is a background process, see Environment). Finished work (all merged to `main`):
+No worker agent is running (no dev server is running either). Finished work (all merged to `main`):
 
 | Task | Merge |
 |---|---|
