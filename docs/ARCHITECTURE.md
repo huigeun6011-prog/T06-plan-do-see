@@ -9,8 +9,11 @@ Update this file whenever structure, components or conventions change.
 ├── AGENTS.md          # instructions for all AI agents (CLAUDE.md points here)
 ├── README.md          # for humans
 ├── neon.ts            # Neon project config (Postgres only)
-├── app/               # Next.js App Router: pages, route handlers, styles
+├── app/               # Next.js App Router: pages, server actions, route handlers, styles
 ├── db/                # server-side SQL and queries (plain SQL, parameterized)
+├── lib/               # pure logic shared by server and screens (time, validation, limits, catalog parser); lib/ui/ holds screen logic with tests
+├── data/              # boss-catalog.csv: the boss list (name, difficulty, cycle, max party, crystal price, cubes)
+├── contracts/         # pds-schema-v2.json, checked against the database by a test
 ├── tests/             # Vitest tests
 ├── docs/              # project memory: status, plans, decisions, architecture, task text
 │   ├── STATUS.md  PROJECT.md  ARCHITECTURE.md  ROADMAP.md  TASK.md
@@ -31,18 +34,23 @@ Update this file whenever structure, components or conventions change.
 | Data access (server only) | plain SQL functions that take an `sql` client first: characters, versioned registrations, plans with idempotent todo generation, todos (CRUD, search, filter, sort, week view), run records, retro numbers and overview, improvement todos, export snapshot | `db/*.ts` |
 | Export | `GET /export` downloads one JSON snapshot (all rows including history, derived retro totals) | `app/export/route.ts`, `db/export.ts` |
 | Schema contract | tables, columns, relations, date rules, aggregates; a test compares it with the database | `contracts/pds-schema-v2.json` |
-| UI shell (mock data) | `/preview`: numbered cards, character cards, boss tiles, icon slot, theme on the wrapper, contrast tested from the CSS | `app/preview/`, `app/components/`, `lib/ui/` |
-| Connection check page (throwaway) | proves save and read from Vercel to Neon; delete when the real app exists | `app/page.tsx`, `app/ping/route.ts`, `app/note.ts`, `db/ping.*` |
+| UI shell (mock data) | `/preview`: numbered cards, character cards, boss tiles, icon slot, theme on the wrapper, contrast tested from the CSS. Shared pieces (`Shell` with the nav `주간` / `수정`, the no-login notice slot and the wide container; `IconTile`, `BossTile`, `CharacterCard`, `Section`) are used by the real screens too | `app/preview/`, `app/components/`, `lib/ui/` |
+| This-week screen (home page `/`) | server component calls `loadWeek` (a constant number of statements: todos with the current registration, character and run records, grouped per character and per period); client `WeekView` renders tiles; actions `setDoneAction` (explicit desired state, idempotent), `setCountAction` (sets today's units), `setMinutesAction`; pure helpers for strip, filter, box states, minutes parsing | `app/page.tsx`, `app/week/`, `db/week.ts`, `lib/week-logic.ts`, `lib/ui/week-ui.ts` |
+| Registration screen (`/register`) | characters, boss picker from the catalog, missions, paste box with preview, edit with expected-version conflict check, reorder, delete; limits (12 weekly bosses per character, account level missions only) enforced on the server inside the insert; Korean messages mapped in `lib/ui/messages.ts` | `app/register/`, `db/register.ts`, `db/entry-limits.ts`, `lib/limits.ts`, `lib/entry-lines.ts`, `lib/catalog.ts`, `lib/ui/register-logic.ts` |
+| Boss catalog | CSV in the repository, read on the server by `app/register/page.tsx` and parsed by `lib/catalog.ts`; reward of a catalog entry = crystal price / party size; no image field yet | `data/boss-catalog.csv`, `lib/catalog.ts` |
+| Connection check (throwaway) | the page and the public `/ping` route are removed; `db/ping.*` and the production `ping` table are still there and go later | `db/ping.*` |
 
-Screens wired to real data are not built yet (see `docs/ROADMAP.md`).
+No screen exists yet for the retro, history, overview, improvement or event plans (server side is built, see `docs/ROADMAP.md`).
+
+Screen conventions: server actions are `'use server'` files next to the screen and return serializable results (`{ ok: true, ... }` or `{ ok: false, field?, message }`) with generic errors; logic that can be tested goes into pure functions under `lib/` or `lib/ui/` because there are no DOM test tools; each screen has its own CSS file with `pd-` prefixed class names that must not repeat across files (Next.js keeps CSS of earlier routes loaded).
 
 ## Data model
 
-Five tables (`game_character`, `entry`, `plan`, `todo`, `run_record`) and the view `todo_state`; details in `docs/plans/0001-core-schema.md`, decision in ADR 0004. Versioned: `plan`, `entry`. Done state and retro numbers are derived. The tables exist on the Neon `dev` and `test` branches; `production` still only has the `ping` table (apply with `npm run db:apply:production` right before the app uses them).
+Five tables (`game_character`, `entry`, `plan`, `todo`, `run_record`) and the view `todo_state`; details in `docs/plans/0001-core-schema.md`, decision in ADR 0004. Versioned: `plan`, `entry`. Done state and retro numbers are derived. The tables exist on the Neon `dev`, `test` and `production` branches (production is empty). Edits to a registration create a new version and change only todos generated afterwards (todos hold a snapshot).
 
 ## Data flow
 
-Browser -> Vercel (Next.js server code) -> Neon Postgres over HTTP (`@neondatabase/serverless`). Server code reads `DATABASE_URL`; the browser never sees it. Forms post to a route handler, which validates, inserts with a parameterized query and redirects; pages are rendered on demand from the database, so data survives refresh and restart.
+Browser -> Vercel (Next.js server code) -> Neon Postgres over HTTP (`@neondatabase/serverless`). Server code reads `DATABASE_URL`; the browser never sees it. Screens call server actions (and the export is a route handler); the server validates, runs parameterized SQL and returns a result; pages are rendered on demand (`force-dynamic`) from the database, so data survives refresh and restart.
 
 ## Conventions
 

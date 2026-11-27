@@ -2,47 +2,72 @@
 
 > The first thing a new agent reads after `AGENTS.md`. Keep it short and true. Owned by the Orchestrator.
 
-- **Phase:** Active   <!-- UNINITIALIZED → Active → Maintenance -->
-- **Last updated:** 2026-11-27 by Claude
-- **Branch in use:** `main`
+- **Phase:** Active
+- **Last updated:** 2026-11-27 by Claude (Orchestrator)
+- **Branch in use:** `main` (all finished work is merged; no open feature branch)
 
 ## Summary
 
-ALEPH task 6: Plan-Do-See diary for the owner's weekly MapleStory routine (plan, todo, run record, retro linked in a server DB, no login). Loop mode with delegation (ADR 0002). Settled: stack (ADR 0003), data model (ADR 0004, `docs/plans/0001-core-schema.md`), AI recap design (ADR 0005). Built and merged to `main`: schema on Neon `dev`/`test` with a branch guard, Seoul time helpers, characters, registrations, plans with idempotent generation, todos with search/filter/sort, run records, retro numbers, improvement todo, and the `/preview` UI shell with mock data. `production` DB still has only the `ping` table; the live site (https://plan-do-see-diary-six.vercel.app) shows the connection check page at `/` and the mock `/preview`. Chunk 9 (`/export` and the schema contract) is built and reviewed on `feat/export`, not merged.
+ALEPH task 6: a Plan-Do-See diary for the owner's weekly MapleStory (KR) boss routine (plan, todo, run record, retro linked in a server DB, no login). Task text: `docs/TASK.md`. Loop mode with delegation (ADR 0002): the human throws one chunk at a time, the Orchestrator (you, if you talk to the human) vets it, waits for an explicit OK, delegates to Paseo workers, verifies, writes the docs, merges. Talk to the human in Korean; write repo files in English.
+
+**Live and working** (https://plan-do-see-diary-six.vercel.app, a push to `main` deploys):
+- `/` this-week screen on real data: no-login notice, remaining strip, show-only-remaining toggle, per-character cards (weekly bosses on one line, mission row, others), monthly section, tap to complete or undo, box editor for cumulative tiles (earlier days locked, today editable), minutes chip.
+- `/register` (menu name `수정`): characters, boss picker from `data/boss-catalog.csv` (difficulty chips, reward = crystal price / party), missions, paste box, edit, reorder, delete, 12 weekly bosses per character, account card with missions only.
+- `/export` JSON snapshot, `/preview` mock UI shell.
+- Server side done and tested: schema, versioned registrations, plans with idempotent generation, todos, run records, retro numbers, grouped retro, history, overview, improvement todo, export (`db/*.ts`). The retro, improvement, history and overview have NO screen yet.
+
+**Not built yet:** retro screen (W4), minutes and miss-reason input beyond the minutes chip (W3), event plans screen (W5), AI recap (ADR 0005, needs the API key), doping catalog, today suggestion, coin forecast, automatic clear-time measurement, boss images.
+
+**Data:** the `production` Neon branch has the schema and is EMPTY (plus the throwaway `ping` table, 4 rows, drop only with the human's OK). The human has not entered real plans yet. The `dev` branch holds the human's own test data and my test data; truncate only after checking `NEON_BRANCH=dev`, and do not erase the human's test data without asking.
 
 ## Next step
 
-1. W1d (human's feedback on `/register`, decided 2026-11-27): pick bosses from a catalog instead of typing (name, difficulty, crystal price, an image shown beside each); the human supplies the catalog data and images. Also: top menu `등록` becomes `수정`, a label on the party-size field with a hint instead of a pre-filled 1, no repeat-count field for bosses (always 1; only missions keep it), find out what the stray `0` in the lower left of the entry form is and remove it if it means nothing. Decide where the images live (repository files versus an external address) when the files arrive.
-2. W3 minutes and miss reason input, W4 retro screen, W5 event plans (see `docs/ROADMAP.md`).
-3. Later: screenshot import from the in-game scheduler (the human said: not with AI for now; revisit later), AI recap (chunk 11, needs the API key), doping table, today suggestion and coin forecast.
+Ask the human which to do first; suggested order:
+1. W1d follow-ups: the boss picker asks for minutes after a chip tap because the server needs `clear_minutes >= 1` and the catalog has none (option: a default such as 10, or accept 0 as unknown; ask). Check once a character exists in production that the catalog CSV is read on Vercel (the page falls back to the typed form if not). Boss images: the human gives files; decide repository versus external address.
+2. W3: minutes entry beyond the chip, miss reason (200 characters) on a todo.
+3. W4: retro screen (numbers with drill-down, history, per-character and per-tag view, improvement line, ended plans without a retro on the home page).
+4. W5: event plans (create, own missions, own retro).
+5. Doping catalog (the human gives the table), net meso, today suggestion, monthly coin forecast.
+6. AI recap (chunk 11) when the human enters the API key; screenshot import of the in-game scheduler later, not with AI for now.
+7. Finish: the human enters real plans; final sweep (XSS, secrets, private-window check T06-C01, refresh keeps data, double click leaves one record); final Reviewer run; submission texts (T06-C59, C60); drop the `ping` table and `db/ping.*`; archive finished Paseo workspaces.
 
-This-week screen (W2) is merged and live; the production database is still empty, so the live home page shows the empty state with a link to the registration screen.
+Open question for the human: edits to a registration change only todos generated afterwards (todos are snapshots), so changing a mission's repeat count does not change this week's tile. Leave as designed or add an "apply to this week" option.
+
+## Environment (what exists right now)
+
+| Thing | State |
+|---|---|
+| Main folder `C:\Users\User\Desktop\T06-plan-do-see` | `main`, `.env.local` points to `production`; DB scripts and DB tests REFUSE here; `npm run build` works |
+| Worktree `C:\Users\User\.paseo\worktrees\1fzew51o\ui-shell` | UI agent's; branch `feat/register-catalog` (merged); `.env.local` has the `dev` address only, so DB tests fail there and UI tests work: `npx vitest run tests/ui-*.test.ts` |
+| Worktree `...\1fzew51o\core-schema` | Implementer's; branch `feat/week-server` (merged); `.env.local` has `dev` and `test`; full `npm test` works here (289 tests at `d64949f`; switch it to the branch you want checked) |
+| Worktrees `db-ping`, `core-schema-plan`, `review-ui-shell` | finished, can be archived |
+| Paseo agents | UI `3a7bf0f3-b95d-4bda-836c-7a00a84c7563` (workspace `wks_3256fb9c504da5f0`), Implementer `65420270-e406-491b-adbd-5aa133fe9272` (workspace `wks_4c20089b9b84758d`); reuse them with `send_agent_prompt`; new work starts with `git switch -c <branch> main` in their worktree |
+| Dev server | `next dev -p 3010` runs in the `ui-shell` worktree against the `dev` DB (started by the Orchestrator; it can outlive its task; find the PID with `netstat` and stop only that PID). The human tries http://localhost:3010/ and `/register` there |
+| Neon branches | `production` (real), `dev` (development), `test` (tests reset it) |
+| Browser checks | Aside CLI: `aside repl < file.js`; no state survives between calls, so each script starts with `listBrowserTabs()` and `attachBrowserTab(id)` (or `openTab(url)`); read pages with `snapshot(page)` |
+
+## How work runs (learned the hard way)
+
+- Delegate with a self-contained prompt (`docs/agents/HANDOFF.md`); workers do not see the conversation. Approve worker shell commands one by one after reading them; deny `taskkill /IM` style commands, pushes and deploys by workers. Workers never edit docs.
+- Verify every worker result yourself: read the diff, run the tests and the build, and for screens drive the real page with Aside on the `dev` DB. Put test data in `dev`, never in `production`.
+- UI logic goes into pure functions under `lib/ui/` with tests (there are no DOM test tools). Server actions live next to the screens and return serializable results with generic Korean errors.
+- Ask the human before merging to `main`, applying anything to `production`, or adding accounts, secrets or services. The human once said "decide the merge yourself" for W2; do not assume it carries over.
+- The human's taste: minimal text, neutral black and white, PC first and phone usable, stacked numbered cards, tiles with icon and difficulty badge letter; the task conditions are guidelines the human may break; useful extras are welcome; no AI for screenshot import for now.
 
 ## In flight
 
-| Task | Plan | Profile | Workspace / branch | State |
-|---|---|---|---|---|
-| DB connection check page (throwaway) | none; delegation prompt only | Implementer | `feat/db-ping` (`3c8519a`), workspace `wks_4bb427a12459055e` | merged to `main` (`ef09043`), deployed; worktree can be archived |
-| Core table design (no doping) | `docs/plans/0001-core-schema.md` | Planner | `docs/core-schema-plan`, workspace `wks_3be368cacaae8028` | done; worktree can be archived |
-| Core chunks 1-2: schema on `dev`, test helper, Seoul time helpers | `docs/plans/0001-core-schema.md` (section 8) | Implementer | `feat/core-schema`, workspace `wks_4c20089b9b84758d` | merged to `main` (`9036d53`); worktree can be archived |
-| Core chunk 3: characters and registrations (no screens) | `docs/plans/0001-core-schema.md` (section 8) | Implementer | `feat/entries` (`15030dc`) in workspace `wks_4c20089b9b84758d` | merged to `main` (`ebf8565`) with the human's OK |
-| Core chunk 4: plans, generation, event plans, hand-made todos (no screens) | `docs/plans/0001-core-schema.md` (section 8) | Implementer | `feat/plans` (`eee50ab`, stacked on `feat/entries`), same workspace | merged to `main` (`ebf8565`) with the human's OK |
-| Core chunk 5: todo update/delete, search/filter/sort, week view data (no screens) | `docs/plans/0001-core-schema.md` (section 8) | Implementer | `feat/todos` (`f55890a`, stacked on `feat/plans`), same workspace | reviewed by the Orchestrator (116 tests, build); merged to `main` with chunk 6 |
-| Core chunk 6: run records, miss reason (+ week view ordering fix, `setEntryOrder`) | `docs/plans/0001-core-schema.md` (section 8) | Implementer | `feat/runs` (`c831e4b`, stacked on `feat/todos`), same workspace | reviewed and accepted by the Orchestrator (127 tests, build); merged to `main` (chunks 5-6) with the human's OK |
-| Core chunk 7: retro, grouped retro, history, overview per character (+ two small fixes) | `docs/plans/0001-core-schema.md` (section 8) | Implementer | `feat/retro` (`3ab0520`, stacked on `feat/runs`), same workspace | reviewed and accepted by the Orchestrator (130 tests, build, db:apply on dev); merged to `main` with chunk 8 |
-| Core chunk 8: improvement as a todo in the next plan (manual path), plans needing a retro | `docs/plans/0001-core-schema.md` (section 8), ADR 0005 | Implementer | `feat/improvement` (`f66cda8`, stacked on `feat/retro`), same workspace | reviewed and accepted by the Orchestrator (135 tests, build); merged to `main` (chunks 7-8) with the human's OK |
-| Core chunk 9: export and `contracts/pds-schema-v2.json` | `docs/plans/0001-core-schema.md` (section 7) | Implementer | `feat/export` (`ec5579f`, stacked on `feat/improvement`), same workspace | reviewed and accepted by the Orchestrator (141 tests, build, route is dynamic); merged to `main` with the human's OK (2026-11-27) |
-| W1a: server side of the registrations screen (parser for pasted lines, load, reorder, bulk commit, server actions) | prompt only; types are the contract for W1b | Implementer | `feat/register-server` (`60f9866`) in workspace `wks_4c20089b9b84758d` | reviewed by the Orchestrator; the append-at-the-end defect is fixed in `1066f38` and re-verified (200 tests, build); merged to `main` with the screen branch (`e4b42f5`) |
-| W1c server: 12 weekly bosses per character, account level missions only, race-safe, Korean errors | prompt only; numbers in `lib/limits.ts` | Implementer | `feat/register-limits` (`55ef546`) in workspace `wks_4c20089b9b84758d` | reviewed and accepted by the Orchestrator (277 tests, build); merged to `main` with the screen part (`366b9ef`) |
-| W2a: server side of the this-week screen (`loadWeek`, done and count and minutes actions, one-query-per-kind loading) | prompt only; types are the contract for W2b | Implementer | `feat/week-server` (`d64949f`) in workspace `wks_4c20089b9b84758d` | reviewed by the Orchestrator (289 tests, build); plain-todo undo now works across days; merged to `main` with W2b (`48391d5`) |
-| W1d: boss catalog picker on `/register` (+ nav label, party label, no boss repeat count, stray `0`) | prompt only; data `data/boss-catalog.csv` (`f19f324`) | UI | `feat/register-catalog` (from `main`) in workspace `wks_3256fb9c504da5f0` | built (`750a8e4`, `759bafd`, `bdf8243` and a class-name fix), 146 UI tests, build; Orchestrator verified in a real browser on dev (picker, minutes prompt, `✓` for added chips, edit party 1 to 6 recomputes reward 4890만 to 815만, 12/12 disables weekly chips, 12 bosses on one line, chip look unchanged after client navigation); merged to `main` (`4a30514`) |
-| W2b: this-week screen on `/` (notice, remaining strip, tiles, box editor, minutes chip, nav) | prompt only; contract `app/week/types.ts` | UI | `feat/week-screen` (from `feat/week-server`) in workspace `wks_3256fb9c504da5f0` | built (`93db157`, `d939ca9`, `d6959e1`; includes W2a `d64949f`); 133 UI tests, build; Orchestrator verified in a real browser on dev data (12 bosses on one line at 1280 px, double click leaves one record, refresh keeps it, minutes chip, undo, box editor confirm/cancel/reopen); dev data truncated; merged to `main` with W2a (`48391d5`) after the human said to decide it myself; deployed and live (home page shows the empty state, `/register` 200) |
-| W1c screen: `n/12`, hidden boss add at 12, account card missions only, line-0 errors | prompt only | UI | `feat/register-limits-screen` (`f04ad53`) in workspace `wks_3256fb9c504da5f0` | done and verified by the Orchestrator in a real browser (the UI agent hit its 5-hour usage limit after committing and never sent its report); merged to `main` (`366b9ef`) |
-| W1b: `/register` screen on the W1a actions | prompt only; contract `app/register/types.ts` | UI | `feat/register-screen` (from `feat/register-server`) in workspace `wks_3256fb9c504da5f0` (the `ui-shell` worktree) | built (`eff8f7e`), 80 UI tests and build pass; Orchestrator ran it in a real browser against the dev DB; Reviewer-Codex round 1 fixed (`795a913`, `7ab6de4`, `d8d6e80`), re-verified by the Orchestrator in a real browser; branch also contains the server fix via merge `44874ac`; merged to `main` (`e4b42f5`) with the human's OK (2026-11-27); dev server on port 3010 (started by the Orchestrator) can stay for the human's try-out |
-| UI shell on `/preview` with mock data | prompt only (look, components, constraints) | UI | `feat/ui-shell` (`3664a99`), workspace `wks_3256fb9c504da5f0` | merged to `main` (`5761205`) with the human's OK; two Reviewer-Codex rounds, round 2 fixes verified by the Orchestrator; the dev server on port 3010 can be stopped |
-| Review of the UI shell (read only) | `3664a99` | Reviewer-Codex | `review/ui-shell`, workspace `wks_96f047710228dc8d` | round 2 done; findings fixed |
+Nothing is running. Finished work (all merged to `main`):
 
-State: `planning` · `awaiting approval` · `implementing` · `in review` · `fixing` · `blocked` · `ready to merge`
+| Task | Merge |
+|---|---|
+| Connection check page, schema, time helpers, characters, entries, plans, todos, runs, retro, improvement, export (chunks 1-9, `docs/plans/0001-core-schema.md`) | `ef09043` through the `feat/export` merge |
+| UI shell `/preview` | `5761205` |
+| W1a/W1b registrations server and screen | `e4b42f5` |
+| W1c 12-boss limit, server and screen | `366b9ef` |
+| W2a/W2b week server and screen (home page) | `48391d5` |
+| W1d boss catalog picker, nav label, party label, no boss repeat count | `4a30514` |
+
+Details of each are in the Decision log below.
 
 ## Decision log
 
@@ -110,9 +135,9 @@ State: `planning` · `awaiting approval` · `implementing` · `in review` · `fi
 - Boss lists per character as text (names, clear minutes, party size, memo); photos cannot be read by workers.
 - Auto clear-time: samples needed (waiting room, in-battle timer, clear screen for a few bosses; game resolution, window mode). OCR library choice needs an ADR.
 - Whether a Maple boss routine counts as "game practice" for card 1 is the author's reading; ask the instructor if in doubt.
-- Delete the connection check page and the `ping` table once the real app exists.
+- The connection check page and `/ping` route are removed; still to remove: `db/ping.*` and the production `ping` table (4 rows, needs the human's OK).
 - Character images and boss icons: on hold (the human). Placeholders stay for now.
-- UI feedback from the human (2026-11-26), to be applied when the screens are wired (nothing changed yet):
+- UI feedback from the human (2026-11-26); items 1-4 were applied in W2 (boxes, one-line tiles, mission row, minutes chip), kept here as the record:
   1. Cumulative tiles (hunting 6/6; decided: earlier days locked, today editable): today a click only adds one. Wanted: a row of boxes (e.g. six squares) that the user clicks to set the count, several at once, then confirms (확정). Backend fit: `completeTodo` SETS that day's units; boxes filled by earlier days are locked, today's boxes are editable, confirm sends units = clicked total minus units from other days (clamped at 0).
   2. A character's tiles (12 or more bosses) must stay on ONE line unless the screen is narrow: narrower tiles and a wider card on PC (the current max width of 960 px forces a wrap).
   3. Weekly content is not only bosses: 지하수로, 앵글러 컴퍼니 and similar missions also appear per character. They are ordinary weekly registrations (no difficulty word, so no badge); show them as a second tile row (mission) in the character card, mock data to include them; the human will list them with minutes.
@@ -128,8 +153,8 @@ State: `planning` · `awaiting approval` · `implementing` · `in review` · `fi
 
 ## Blockers and questions for the human
 
-- Merge OK for `feat/export` (chunk 9)? Optional standing approval: the Orchestrator merges and pushes logic chunks that passed review and tests and only reports; screen-changing deploys, `production` DB changes and new external services or secrets are still asked first.
-- Clean-up options for later: archive the finished Paseo workspaces (`db-ping`, `core-schema-plan`, `review-ui-shell`, `ui-shell`).
+- No blocker. Questions are listed under "Next step".
+- Clean-up options: archive the finished Paseo workspaces (`db-ping`, `core-schema-plan`, `review-ui-shell`), stop the dev server when not needed.
 
 ## Parked follow-ups
 
