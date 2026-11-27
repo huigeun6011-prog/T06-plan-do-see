@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { loadWeekAction, setCountAction, setDoneAction, setMinutesAction } from "../app/week/actions";
 import { connectDatabase } from "../db/client";
 import { ensureCurrentPlans } from "../db/plans";
-import { completeTodo, listRuns, setRunMinutes } from "../db/runs";
+import { completeTodo, listRuns, setRunMinutes, uncompleteTodo } from "../db/runs";
 import { createTodo, getTodo } from "../db/todos";
 import { useTestDatabase } from "./helpers/db";
 
@@ -47,6 +47,35 @@ describe("week actions", () => {
     expect(revalidatePath).toHaveBeenCalledExactlyOnceWith("/");
     await expect(loadWeekAction()).resolves.toMatchObject({ ok: true, data: { today } });
   });
+
+  it("undoes an earlier plain completion and creates a new run when completed today", async () => {
+    const todo = await makeTodo();
+    vi.setSystemTime(yesterday);
+    const first = await setDoneAction(todo.id, true);
+    expect(first).toMatchObject({ ok: true, run: { run_date: "2026-11-27", done: true } });
+    await setRunMinutes(sql, todo.id, "2026-11-27", 12);
+    const [previous] = await listRuns(sql, todo.id);
+
+    vi.setSystemTime(now);
+    await expect(uncompleteTodo(sql, todo.id, today, "plain")).resolves.toBe(false);
+    vi.mocked(revalidatePath).mockClear();
+    for (let repeat = 0; repeat < 2; repeat++) {
+      await expect(setDoneAction(todo.id, false)).resolves.toEqual({ ok: true, run: null });
+    }
+    expect(revalidatePath).toHaveBeenCalledExactlyOnceWith("/");
+    await expect(listRuns(sql, todo.id)).resolves.toEqual([{ ...previous, done: false }]);
+    await expect(getTodo(sql, todo.id)).resolves.toMatchObject({ done_n: 0, is_done: false });
+    await expect(loadWeekAction()).resolves.toMatchObject({
+      ok: true, data: { today, weekly: { groups: [{ others: [{ id: todo.id, done_n: 0, is_done: false }] }] } },
+    });
+
+    await expect(setDoneAction(todo.id, true)).resolves.toMatchObject({ ok: true, run: { run_date: today, done: true } });
+    const runs = await listRuns(sql, todo.id);
+    expect(runs).toHaveLength(2);
+    expect(runs[0]).toEqual({ ...previous, done: false });
+    expect(runs[1].id).not.toBe(previous.id);
+    await expect(getTodo(sql, todo.id)).resolves.toMatchObject({ done_n: 1, is_done: true });
+  }, 30_000);
 
   it("sets today's count and undoes only today while retaining the stored units", async () => {
     const todo = await makeTodo(6);

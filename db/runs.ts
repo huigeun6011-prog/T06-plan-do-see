@@ -101,22 +101,29 @@ export async function completeTodo(
   }
 }
 
+async function uncompleteWithMode(sql: SqlClient, id: string, day: string | null, mode: TodoRunMode): Promise<boolean> {
+  const [[target], rows] = await sql.transaction((tx) => [
+    lockTodoRunTarget(tx, id),
+    tx`
+      UPDATE run_record SET done = false
+      WHERE todo_id = ${id} AND use_yn = 'Y' AND done
+        AND (${day}::date IS NULL OR run_date = ${day})
+        AND ${tx.unsafe(RUN_MODE_SQL)} = ${mode}
+      RETURNING id
+    `,
+  ], { isolationLevel: "ReadCommitted" });
+  checkRunMode(target.target_count, mode);
+  return rows.length > 0;
+}
+
+export async function uncompletePlainTodo(sql: SqlClient, todoId: string): Promise<boolean> {
+  return uncompleteWithMode(sql, validateId(todoId, "todo_id"), null, "plain");
+}
+
 export async function uncompleteTodo(sql: SqlClient, todoId: string, runDate: string, mode?: TodoRunMode): Promise<boolean> {
   const id = validateId(todoId, "todo_id");
   const day = validateRunDate(runDate);
-  if (mode !== undefined) {
-    const [[target], rows] = await sql.transaction((tx) => [
-      lockTodoRunTarget(tx, id),
-      tx`
-        UPDATE run_record SET done = false
-        WHERE todo_id = ${id} AND run_date = ${day} AND use_yn = 'Y' AND done
-          AND ${tx.unsafe(RUN_MODE_SQL)} = ${mode}
-        RETURNING id
-      `,
-    ], { isolationLevel: "ReadCommitted" });
-    checkRunMode(target.target_count, mode);
-    return rows.length > 0;
-  }
+  if (mode !== undefined) return uncompleteWithMode(sql, id, day, mode);
   const rows = await sql`
     UPDATE run_record SET done = false
     WHERE todo_id = ${id} AND run_date = ${day} AND use_yn = 'Y' AND done

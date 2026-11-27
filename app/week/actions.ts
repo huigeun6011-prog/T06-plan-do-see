@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { connectDatabase } from "../../db/client";
-import { completeTodo, setRunMinutes, uncompleteTodo, type TodoRunMode } from "../../db/runs";
+import { completeTodo, setRunMinutes, uncompletePlainTodo, uncompleteTodo, type TodoRunMode } from "../../db/runs";
 import { loadWeek } from "../../db/week";
 import { todaySeoul } from "../../lib/time";
 import { validateUnitsToday, ValidationError } from "../../lib/validate";
@@ -19,7 +19,10 @@ async function setProgress(
   const sql = connectDatabase();
   const now = new Date();
   if (!done) {
-    if (await uncompleteTodo(sql, todoId, todaySeoul(now), mode)) revalidatePath("/");
+    const changed = mode === "plain"
+      ? await uncompletePlainTodo(sql, todoId)
+      : await uncompleteTodo(sql, todoId, todaySeoul(now), mode);
+    if (changed) revalidatePath("/");
     return { ok: true, run: null };
   }
   const result = await completeTodo(sql, todoId, now, units === undefined ? undefined : { units }, mode);
