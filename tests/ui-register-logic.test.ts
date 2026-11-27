@@ -109,3 +109,16 @@ describe("weekly boss limit", () => {
     expect(canAddBoss([...many(11), boss("monthly"), boss("weekly", ["mission"])])).toBe(true);
   });
 });
+
+describe("empty party and repeat count", () => {
+  const f: EntryFields = { title: "t", minutes: "5", party: "", target: "", doping: "", memo: "", period: "weekly" };
+  const base = { characterId: "1", sortOrder: 0, reward: 0 };
+  it("empty party means 1, empty target means 1", () => {
+    const out = buildEntryInput({ ...base, kind: "mission", fields: f });
+    expect([out.party_size, out.target_count]).toEqual([1, 1]);
+  });
+  it("bosses always send target 1; missions keep theirs", () => {
+    expect(buildEntryInput({ ...base, kind: "boss", fields: { ...f, target: "6" } }).target_count).toBe(1);
+    expect(buildEntryInput({ ...base, kind: "mission", fields: { ...f, target: "6" } }).target_count).toBe(6);
+  });
+});

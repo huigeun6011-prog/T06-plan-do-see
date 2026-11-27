@@ -39,10 +39,10 @@ export function buildEntryInput(o: {
     period_kind: f.period,
     clear_minutes: Number(f.minutes),
     reward_meso: o.reward,
-    party_size: Number(f.party),
+    party_size: f.party.trim() === "" ? 1 : Number(f.party),
     doping: f.doping.trim() || undefined,
     memo: f.memo,
-    target_count: Number(f.target),
+    target_count: o.kind === "boss" || f.target.trim() === "" ? 1 : Number(f.target), // bosses are once a period; empty means 1
     tags: o.original ? [...o.original.tags] : [o.kind],
     sort_order: o.original?.sort_order ?? o.sortOrder,
     character_id: o.characterId,

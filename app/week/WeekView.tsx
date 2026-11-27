@@ -218,7 +218,7 @@ export function WeekView({ data }: { data: WeekData }) {
     return (
       <Section no="01" title="주간">
         <p>
-          <Link href="/register">등록</Link>
+          <Link href="/register">수정</Link>
           <span className="pd-dim"> 항목이 없습니다</span>
         </p>
       </Section>
