@@ -1,9 +1,10 @@
+import type { NeonQueryFunctionInTransaction } from "@neondatabase/serverless";
 import { type SqlClient, violatesConstraint } from "./client";
 import { serializeTodo, type TodoState, type TodoStateRow } from "./todos";
 import { todaySeoul } from "../lib/time";
 import {
   type CompleteTodoInput, type RunDetails, validateCompletion, validateDate, validateId, validateMissReason,
-  validateRunDate, validateRunDetails, ValidationError,
+  validateRunDate, validateRunDetails, validateRunMinutes, ValidationError,
 } from "../lib/validate";
 
 type RunRow = RunDetails & {
@@ -22,6 +23,29 @@ export type Run = Omit<RunRow, "started_at" | "ended_at" | "created_at"> & {
   created_at: string;
 };
 export type CompletionResult = { run: Run; todo: TodoState } | { alreadyDone: true };
+export type TodoRunMode = "plain" | "cumulative";
+
+const RUN_MODE_SQL = `
+  CASE current_setting('pds.run_target_count', true)
+    WHEN '' THEN 'missing'
+    WHEN '1' THEN 'plain'
+    ELSE 'cumulative'
+  END
+`;
+
+function lockTodoRunTarget(tx: NeonQueryFunctionInTransaction<false, false>, id: string) {
+  return tx`
+    SELECT set_config('pds.run_target_count', COALESCE((
+      SELECT target_count::text FROM todo WHERE id = ${id} AND use_yn = 'Y' FOR UPDATE
+    ), ''), true) AS target_count
+  `;
+}
+
+function checkRunMode(target: unknown, mode: TodoRunMode | undefined) {
+  if (target === "") throw new ValidationError("todo_id", "Choose an active todo.");
+  if (mode === "plain" && target !== "1") throw new ValidationError("todo_id", "횟수를 정해서 확정하세요.");
+  if (mode === "cumulative" && target === "1") throw new ValidationError("todo_id", "횟수형 할 일만 수정할 수 있습니다.");
+}
 
 function serializeRun(row: RunRow): Run {
   return {
@@ -33,7 +57,7 @@ function serializeRun(row: RunRow): Run {
 }
 
 export async function completeTodo(
-  sql: SqlClient, todoId: string, now: Date, input?: CompleteTodoInput,
+  sql: SqlClient, todoId: string, now: Date, input?: CompleteTodoInput, mode?: TodoRunMode,
 ): Promise<CompletionResult> {
   const id = validateId(todoId, "todo_id");
   const runDate = todaySeoul(validateDate(now, "now"));
@@ -41,16 +65,13 @@ export async function completeTodo(
   try {
     // A separate lock statement gives the upsert a fresh snapshot after a concurrent completion.
     const [[target], [run], [todo]] = await sql.transaction((tx) => [
-      tx`
-        SELECT set_config('pds.run_target_count', COALESCE((
-          SELECT target_count::text FROM todo WHERE id = ${id} AND use_yn = 'Y' FOR UPDATE
-        ), ''), true) AS target_count
-      `,
+      lockTodoRunTarget(tx, id),
       tx`
         INSERT INTO run_record (todo_id, run_date, units, actual_minutes, started_at, ended_at)
         SELECT ${id}, ${runDate}, COALESCE(${details.units}::int, 1),
           ${details.actual_minutes}, ${details.started_at}, ${details.ended_at}
         WHERE current_setting('pds.run_target_count', true) <> ''
+          AND (${mode ?? null}::text IS NULL OR ${tx.unsafe(RUN_MODE_SQL)} = ${mode ?? null})
           AND (current_setting('pds.run_target_count', true) <> '1' OR (
             COALESCE(${details.units}::int, 1) = 1 AND NOT EXISTS (
               SELECT 1 FROM run_record
@@ -66,7 +87,7 @@ export async function completeTodo(
       `,
       tx`SELECT * FROM todo_state WHERE id = ${id}`,
     ], { isolationLevel: "ReadCommitted" });
-    if (target.target_count === "") throw new ValidationError("todo_id", "Choose an active todo.");
+    checkRunMode(target.target_count, mode);
     if (target.target_count === "1" && details.units !== null && details.units !== 1) {
       throw new ValidationError("units", "Use one unit for this todo.");
     }
@@ -80,15 +101,42 @@ export async function completeTodo(
   }
 }
 
-export async function uncompleteTodo(sql: SqlClient, todoId: string, runDate: string): Promise<boolean> {
+export async function uncompleteTodo(sql: SqlClient, todoId: string, runDate: string, mode?: TodoRunMode): Promise<boolean> {
   const id = validateId(todoId, "todo_id");
   const day = validateRunDate(runDate);
+  if (mode !== undefined) {
+    const [[target], rows] = await sql.transaction((tx) => [
+      lockTodoRunTarget(tx, id),
+      tx`
+        UPDATE run_record SET done = false
+        WHERE todo_id = ${id} AND run_date = ${day} AND use_yn = 'Y' AND done
+          AND ${tx.unsafe(RUN_MODE_SQL)} = ${mode}
+        RETURNING id
+      `,
+    ], { isolationLevel: "ReadCommitted" });
+    checkRunMode(target.target_count, mode);
+    return rows.length > 0;
+  }
   const rows = await sql`
     UPDATE run_record SET done = false
     WHERE todo_id = ${id} AND run_date = ${day} AND use_yn = 'Y' AND done
     RETURNING id
   `;
   return rows.length > 0;
+}
+
+export async function setRunMinutes(
+  sql: SqlClient, todoId: string, runDate: string, minutes: number | null,
+): Promise<Run | null> {
+  const id = validateId(todoId, "todo_id");
+  const day = validateRunDate(runDate);
+  const actualMinutes = validateRunMinutes(minutes);
+  const [row] = await sql`
+    UPDATE run_record SET actual_minutes = ${actualMinutes}
+    WHERE todo_id = ${id} AND run_date = ${day} AND use_yn = 'Y'
+    RETURNING id, todo_id, run_date::text, units, actual_minutes, started_at, ended_at, done, use_yn, created_at
+  ` as RunRow[];
+  return row ? serializeRun(row) : null;
 }
 
 export async function setRunDetails(
