@@ -165,6 +165,7 @@ describe("run records", () => {
   it("leaves plan values, the generated todo snapshot and the registration intact", async () => {
     const entry = await createEntry(sql, {
       title: "Snapshot", period_kind: "weekly", clear_minutes: 10, reward_meso: 0, party_size: 1, target_count: 3,
+      tags: ["mission"],
     });
     const { weekly } = await ensureCurrentPlans(sql, dayOne);
     const [todo] = await listTodos(sql, { planRootId: weekly.root_id }, dayOne);

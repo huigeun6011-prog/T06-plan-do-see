@@ -10,7 +10,7 @@ const base: EntryInput = {
   clear_minutes: 5,
   reward_meso: "9007199254740991",
   party_size: 1,
-  tags: ["보스", "with, commas"],
+  tags: ["mission", "with, commas"],
 };
 
 describe("characters and registrations", () => {

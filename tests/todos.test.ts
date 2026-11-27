@@ -12,7 +12,7 @@ const now = new Date("2026-11-26T12:00:00Z");
 const soon = new Date(now.getTime() + 1_000);
 const past = new Date(now.getTime() - 1_000);
 const runDate = "2026-11-26";
-const entry = { period_kind: "weekly", clear_minutes: 1, reward_meso: 0, party_size: 1 } as const;
+const entry = { period_kind: "weekly" as const, clear_minutes: 1, reward_meso: 0, party_size: 1, tags: ["mission"] };
 
 describe("todo data access", () => {
   const sql = useTestDatabase();

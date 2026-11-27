@@ -13,7 +13,7 @@ const now = new Date("2026-12-17T12:00:00Z");
 const nextWeek = new Date("2026-12-24T12:00:00Z");
 const weekSourceInstant = new Date("2026-11-26T12:00:00Z");
 const planFields = { title: "Event", success_criteria: "Finish", priority: 2, expected_minutes: 90 };
-const entryFields = { clear_minutes: 10, reward_meso: 0, party_size: 1 };
+const entryFields = { clear_minutes: 10, reward_meso: 0, party_size: 1, tags: ["mission"] };
 
 function historyRow({ drill, done_without_minutes, ...row }: Retro) {
   return row;

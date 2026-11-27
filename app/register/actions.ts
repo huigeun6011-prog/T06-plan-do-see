@@ -3,9 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { createCharacter, renameCharacter } from "../../db/characters";
 import { connectDatabase } from "../../db/client";
+import { bossSlotRequests, checkBossSlots } from "../../db/entry-limits";
 import { createEntry, deleteEntry, editEntry } from "../../db/entries";
 import { commitEntryLines, loadRegistration, reorderCharacters, reorderEntries } from "../../db/register";
 import { parseEntryLines } from "../../lib/entry-lines";
+import { ValidationError } from "../../lib/validate";
 import { entryEditActionResult, withRegistrationResult } from "./action-result";
 import type {
   Character, Entry, EntryInput, EntryLineDefaults, EntryLinePreview, RegistrationActionResult, RegistrationData,
@@ -76,7 +78,17 @@ export async function reorderEntriesAction(ids: string[]): Promise<RegistrationA
 export async function previewEntryLinesAction(
   text: string, defaults: EntryLineDefaults,
 ): Promise<RegistrationActionResult<EntryLinePreview>> {
-  return withRegistrationResult(() => ({ ok: true, ...parseEntryLines(text, defaults) }));
+  return withRegistrationResult<EntryLinePreview>(async () => {
+    const preview = parseEntryLines(text, defaults);
+    try {
+      const requests = bossSlotRequests(preview.rows.map(({ input }) => input));
+      if (requests.length) await checkBossSlots(connectDatabase(), requests);
+    } catch (error) {
+      if (!(error instanceof ValidationError)) throw error;
+      preview.errors.push({ line: 0, field: error.field, message: error.message });
+    }
+    return { ok: true, ...preview };
+  });
 }
 
 export async function commitEntryLinesAction(

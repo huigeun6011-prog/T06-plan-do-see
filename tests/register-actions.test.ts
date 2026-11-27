@@ -3,15 +3,16 @@ import { revalidatePath } from "next/cache";
 import { commitEntryLinesAction, previewEntryLinesAction, saveEntryAction } from "../app/register/actions";
 import { withRegistrationResult } from "../app/register/action-result";
 import type { EntryInput, EntryLineDefaults } from "../app/register/types";
-import { connectDatabase } from "../db/client";
+import { connectDatabase, type SqlClient } from "../db/client";
 import { editEntry } from "../db/entries";
+import { MAX_WEEKLY_BOSSES_PER_CHARACTER } from "../lib/limits";
 import { ValidationError } from "../lib/validate";
 
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("../db/client", () => ({ connectDatabase: vi.fn() }));
 vi.mock("../db/entries", () => ({ editEntry: vi.fn() }));
 
-const defaults: EntryLineDefaults = { period_kind: "weekly", kind: "boss", character_id: null };
+const defaults: EntryLineDefaults = { period_kind: "weekly", kind: "mission", character_id: null };
 const input: EntryInput = { title: "Boss", period_kind: "weekly", clear_minutes: 1, party_size: 1, reward_meso: 0 };
 
 beforeEach(() => vi.resetAllMocks());
@@ -51,4 +52,25 @@ it("previews without connecting and rejects oversized or partially invalid paste
   }
   expect(connectDatabase).not.toHaveBeenCalled();
   expect(revalidatePath).not.toHaveBeenCalled();
+});
+
+it("reports weekly boss overflow and account-level bosses as line-zero preview errors", async () => {
+  const query = vi.fn<SqlClient["query"]>().mockResolvedValue([{ remaining: 2 }]);
+  vi.mocked(connectDatabase).mockReturnValue(Object.assign(vi.fn<SqlClient>(), {
+    query, transaction: vi.fn<SqlClient["transaction"]>(),
+  }));
+  await expect(previewEntryLinesAction("One/1\nTwo/1\nThree/1", {
+    ...defaults, kind: "boss", character_id: "1",
+  })).resolves.toMatchObject({
+    ok: true, errors: [{
+      line: 0, field: "boss_limit", message: `보스는 캐릭터당 최대 ${MAX_WEEKLY_BOSSES_PER_CHARACTER}개입니다 (남은 칸 2).`,
+    }],
+  });
+  expect(query).toHaveBeenCalledExactlyOnceWith(expect.any(String), [
+    JSON.stringify([{ character_id: "1", requested: 3 }]), MAX_WEEKLY_BOSSES_PER_CHARACTER,
+  ]);
+  await expect(previewEntryLinesAction("Boss/1", { ...defaults, kind: "boss" })).resolves.toMatchObject({
+    ok: true, errors: [{ line: 0, field: "kind", message: "계정 단위에는 미션만 등록할 수 있습니다." }],
+  });
+  expect(query).toHaveBeenCalledTimes(1);
 });

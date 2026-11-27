@@ -1,4 +1,6 @@
 import { type SqlClient, violatesConstraint } from "./client";
+import { bossLimitError, CURRENT_WEEKLY_BOSS_SQL, lockBossCharacters, weeklyBossCharacter } from "./entry-limits";
+import { MAX_WEEKLY_BOSSES_PER_CHARACTER } from "../lib/limits";
 import { type EntryInput, type PeriodKind, validateEntry, validateId, validatePeriodKind, validateSortOrder, ValidationError } from "../lib/validate";
 
 export type EntryRow = ReturnType<typeof validateEntry> & {
@@ -27,8 +29,11 @@ function throwEntryError(error: unknown): never {
 
 export async function createEntry(sql: SqlClient, input: EntryInput): Promise<Entry> {
   const entry = validateEntry(input);
+  const bossCharacter = weeklyBossCharacter(entry);
   try {
-    const [row] = await sql`
+    const [, rows] = await sql.transaction((tx) => [
+      lockBossCharacters(tx, bossCharacter === null ? [] : [bossCharacter]),
+      tx`
       WITH n AS (SELECT nextval(pg_get_serial_sequence('entry', 'id')) AS id)
       INSERT INTO entry (id, root_id, character_id, title, period_kind, clear_minutes,
                          reward_meso, party_size, doping, memo, target_count, tags, sort_order)
@@ -40,8 +45,15 @@ export async function createEntry(sql: SqlClient, input: EntryInput): Promise<En
                FROM entry WHERE use_yn = 'Y' AND character_id IS NOT DISTINCT FROM ${entry.character_id}::bigint
              ))
       FROM n
+      WHERE ${bossCharacter}::bigint IS NULL OR (
+        SELECT count(*) FROM entry e WHERE e.character_id = ${bossCharacter}::bigint
+          AND (${tx.unsafe(CURRENT_WEEKLY_BOSS_SQL)})
+      ) < ${MAX_WEEKLY_BOSSES_PER_CHARACTER}
       RETURNING *
-    ` as EntryRow[];
+      `,
+    ], { isolationLevel: "ReadCommitted" });
+    const [row] = rows as EntryRow[];
+    if (!row) throw bossLimitError();
     return serializeEntry(row);
   } catch (error) {
     throwEntryError(error);
@@ -57,17 +69,29 @@ export async function editEntry(
   const root = validateId(rootId, "root_id");
   const version = validateId(expectedVersionId, "id");
   const entry = validateEntry(input);
+  const bossCharacter = weeklyBossCharacter(entry);
 
   try {
     // The HTTP batch cannot branch in JS. Pass the UPDATE result within this transaction.
-    const [, inserted] = await sql.transaction((tx) => [
+    const [, [check], inserted] = await sql.transaction((tx) => [
+      lockBossCharacters(tx, bossCharacter === null ? [] : [bossCharacter]),
       tx`
-        WITH retired AS (
+        WITH capacity AS (
+          SELECT ${bossCharacter}::bigint IS NULL OR (
+            SELECT count(*) FROM entry e WHERE e.character_id = ${bossCharacter}::bigint
+              AND e.root_id <> ${root} AND (${tx.unsafe(CURRENT_WEEKLY_BOSS_SQL)})
+          ) < ${MAX_WEEKLY_BOSSES_PER_CHARACTER} AS available
+        ), retired AS (
           UPDATE entry SET use_yn = 'N'
           WHERE root_id = ${root} AND id = ${version} AND use_yn = 'Y'
+            AND (SELECT available FROM capacity)
           RETURNING id
         )
-        SELECT set_config('pds.entry_retired', (SELECT count(*)::text FROM retired), true)
+        SELECT set_config('pds.entry_retired', (SELECT count(*)::text FROM retired), true),
+          NOT available AND EXISTS (
+            SELECT 1 FROM entry WHERE root_id = ${root} AND id = ${version} AND use_yn = 'Y'
+          ) AS at_limit
+        FROM capacity
       `,
       tx`
         INSERT INTO entry (root_id, character_id, title, period_kind, clear_minutes,
@@ -79,7 +103,8 @@ export async function editEntry(
           AND NOT EXISTS (SELECT 1 FROM entry WHERE root_id = ${root} AND use_yn = 'Y')
         RETURNING id
       `,
-    ]);
+    ], { isolationLevel: "ReadCommitted" });
+    if (check.at_limit) throw bossLimitError();
     const [row] = inserted as { id: string }[];
     return row ? { id: row.id } : { conflict: true };
   } catch (error) {
