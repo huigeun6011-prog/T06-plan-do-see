@@ -74,7 +74,7 @@ export function BossPicker({ catalog, characterId, entries, sortOrder, onClose }
                   <button
                     key={r.difficulty}
                     type="button"
-                    className="pd-chipbtn pd-diff"
+                    className="pd-pickchip"
                     aria-pressed={added}
                     aria-label={`${catalogTitle(r)}${added ? " 추가됨" : ""}`}
                     title={blocked ? LIMIT : catalogTitle(r)}

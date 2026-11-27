@@ -55,5 +55,5 @@
 .pd-pickname { min-width: 4em; overflow-wrap: anywhere; }
 .pd-chips { display: flex; gap: 6px; flex-wrap: wrap; }
 .pd-pickform { align-items: center; }
-.pd-chipbtn { min-height: 44px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); font-size: .85rem; }
-.pd-chipbtn[aria-pressed="true"] { border-color: var(--done); }
+.pd-pickchip { min-height: 44px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); font-size: .85rem; }
+.pd-pickchip[aria-pressed="true"] { border-color: var(--done); }

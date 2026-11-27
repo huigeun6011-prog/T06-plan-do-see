@@ -5,7 +5,6 @@
 .pd-link[aria-current="page"] { border-color: var(--fg); }
 .pd-link:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 .pd a { color: inherit; }
-.pd-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
 .pd-strip { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 
