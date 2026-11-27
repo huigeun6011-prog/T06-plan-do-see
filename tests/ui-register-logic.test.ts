@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildEntryInput, canRegister, isConflict, moveItem, reorderGroup, sameSnapshot, type EntryFields, type Snapshot } from "../lib/ui/register-logic";
+import { buildEntryInput, canAddBoss, canRegister, countWeeklyBosses, isConflict, moveItem, reorderGroup, sameSnapshot, type EntryFields, type Snapshot } from "../lib/ui/register-logic";
 
 describe("moveItem", () => {
   it("moves up and down", () => {
@@ -90,5 +90,22 @@ describe("paste snapshot", () => {
     expect(canRegister(s, { ...ok, errors: 1 })).toBe(false);
     expect(canRegister(s, { ...ok, rows: 0 })).toBe(false);
     expect(canRegister(s, null)).toBe(false);
+  });
+});
+
+describe("weekly boss limit", () => {
+  const boss = (period_kind: "weekly" | "monthly" = "weekly", tags: string[] = ["boss"]) => ({ tags, period_kind });
+  const many = (n: number) => Array.from({ length: n }, () => boss());
+  it("counts only weekly bosses", () => {
+    expect(countWeeklyBosses([])).toBe(0);
+    expect(countWeeklyBosses([boss("monthly"), boss("weekly", ["mission"]), boss()])).toBe(1);
+    expect(countWeeklyBosses([boss("weekly", ["boss", "mission"]), boss("weekly", [])])).toBe(2);
+  });
+  it("allows 11, refuses 12 and 13", () => {
+    expect(canAddBoss([])).toBe(true);
+    expect(canAddBoss(many(11))).toBe(true);
+    expect(canAddBoss(many(12))).toBe(false);
+    expect(canAddBoss(many(13))).toBe(false);
+    expect(canAddBoss([...many(11), boss("monthly"), boss("weekly", ["mission"])])).toBe(true);
   });
 });
