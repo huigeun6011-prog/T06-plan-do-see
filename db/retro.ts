@@ -37,7 +37,7 @@ const DRILL = Object.freeze({ all: "all", done: "done", late: "late", blocked: "
 const scopes = TODO_SCOPE_PREDICATES;
 
 // Counting IDs keeps the left-join row for an empty plan out of all counts.
-const TOTALS_SQL = `
+export const RETRO_TOTALS_SQL = `
   count(t.id) FILTER (WHERE ${scopes.all})::int AS plan_count,
   count(t.id) FILTER (WHERE ${scopes.done})::int AS done_count,
   count(t.id) FILTER (WHERE ${scopes.late})::int AS late_count,
@@ -76,7 +76,7 @@ export async function getRetro(sql: SqlClient, planRootId: string, now: Date): P
   const root = validateId(planRootId, "plan_id");
   const instant = validateDate(now, "now");
   const [row] = await sql.query(
-    `SELECT p.*, ${TOTALS_SQL}, ${DONE_WITHOUT_MINUTES_SQL}
+    `SELECT p.*, ${RETRO_TOTALS_SQL}, ${DONE_WITHOUT_MINUTES_SQL}
      FROM plan p
      CROSS JOIN (SELECT $2::timestamptz AS as_of) AS clock
      LEFT JOIN todo_state t ON t.plan_id = p.root_id
@@ -112,7 +112,7 @@ export async function getRetroByGroup(
   }
   const { columns, join, keys, order } = GROUP_SQL[group];
   const rows = await sql.query(
-    `SELECT ${columns}, ${TOTALS_SQL}, ${DONE_WITHOUT_MINUTES_SQL}
+    `SELECT ${columns}, ${RETRO_TOTALS_SQL}, ${DONE_WITHOUT_MINUTES_SQL}
      FROM todo_state t
      JOIN plan p ON p.root_id = t.plan_id AND p.use_yn = 'Y'
      CROSS JOIN (SELECT $2::timestamptz AS as_of) AS clock
@@ -142,7 +142,7 @@ export async function listRetroHistory(
   const pageSize = validateRetroHistoryLimit(limit);
   const instant = validateDate(now, "now");
   const rows = await sql.query(
-    `SELECT p.*, ${TOTALS_SQL}
+    `SELECT p.*, ${RETRO_TOTALS_SQL}
      FROM plan p
      CROSS JOIN (SELECT $2::timestamptz AS as_of) AS clock
      LEFT JOIN todo_state t ON t.plan_id = p.root_id
