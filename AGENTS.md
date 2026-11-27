@@ -81,3 +81,15 @@ The Orchestrator writes all project docs (`STATUS.md`, `ARCHITECTURE.md`, `ROADM
 - If a Reviewer ran, it has no open high/medium findings.
 - Docs updated per §6; STATUS.md reflects reality.
 - Work is committed; nothing important lives only in uncommitted state.
+
+## 8. Working with this human (standing rules from the conversations)
+
+- **Language:** speak Korean to the human, in plain words; explain a term the first time you use it (the human asked "what was an ADR?"). Repo files stay English.
+- **Question first:** when the human asks a question or says "just asking", answer it and change nothing. When a doc or process change is proposed, say in Korean how you would change it and wait for the OK before editing. Only an explicit go-ahead ("반영해", "해", "ㅇㅇ") starts work.
+- **Judge honestly:** say what is right even if the human leans another way; the human may overrule. Task conditions (`docs/TASK.md`) are guidelines the human may break; useful extras that fit the project are welcome, so ask "does it fit and help?", not only "does the task require it?". Do not make the human do what a tool can do.
+- **Report what is true:** say what you ran and what you did not verify (for example a screenshot that timed out, a layout not seen, something only read in the code). Never imply a check you did not do.
+- **Approvals:** merging to `main` (which deploys), changes to the `production` database, new accounts, secrets or paid services are the human's call each time. One "decide it yourself" applies only to the item it was said about.
+- **Test data:** use the `dev` database with fake data and remove your own test data afterwards; never write test data to `production`; do not erase the human's own test data in `dev` without asking.
+- **Cost:** be economical with tokens and agents. A Reviewer runs only for big screen changes and the final check, not early; do not start test or helper agents unless they clearly pay off; print only the values you need from tool and browser output; prefer one batched message to a worker over several small ones.
+- **The human's taste:** minimal visible text, neutral black and white, PC first with the phone usable; the human tunes numbers (such as the 12-boss limit) later, so keep them in one named constant. The human enters game knowledge (boss list, prices, doping) as data; do not fetch it from the Nexon Open API and do not scrape sites that forbid it.
+- **Where things are:** state and next step in `docs/STATUS.md`; decisions in short form there and in full in `docs/history/`; structure in `docs/ARCHITECTURE.md`; priorities in `docs/ROADMAP.md`.
