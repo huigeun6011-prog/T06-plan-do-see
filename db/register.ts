@@ -66,7 +66,8 @@ export async function commitEntryLines(sql: SqlClient, rows: EntryLine[], now: D
     if (!Number.isInteger(line) || line < 1 || line > MAX_ENTRY_LINES) {
       throw new ValidationError("line", "Use original line numbers from 1 to 200.");
     }
-    return { ...validateEntry(input), line };
+    const entry = validateEntry(input);
+    return { ...entry, line, sort_order: input.sort_order === undefined ? null : entry.sort_order };
   });
   if (new Set(inputs.map(({ line }) => line)).size !== inputs.length) {
     throw new ValidationError("line", "Include each line once.");
@@ -89,13 +90,21 @@ export async function commitEntryLines(sql: SqlClient, rows: EntryLine[], now: D
           SELECT i.line FROM inputs i JOIN inputs prior
             ON prior.line < i.line AND prior.character_id IS NOT DISTINCT FROM i.character_id AND prior.title = i.title
         ), numbered AS (
-          SELECT nextval(pg_get_serial_sequence('entry', 'id')) AS id, i.*
+          SELECT nextval(pg_get_serial_sequence('entry', 'id')) AS id, i.*,
+            COALESCE(i.sort_order, LEAST(
+              COALESCE((
+                SELECT max(e.sort_order)::bigint + 1 FROM entry e
+                WHERE e.use_yn = 'Y' AND e.character_id IS NOT DISTINCT FROM i.character_id
+              ), 0)
+              + count(*) FILTER (WHERE i.sort_order IS NULL) OVER (PARTITION BY i.character_id ORDER BY i.line) - 1,
+              2147483647
+            )) AS new_sort_order
           FROM inputs i WHERE NOT EXISTS (SELECT 1 FROM conflicts) ORDER BY i.line
         ), inserted AS (
           INSERT INTO entry (id, root_id, character_id, title, period_kind, clear_minutes, reward_meso,
                              party_size, doping, memo, target_count, tags, sort_order, created_at)
           SELECT id, id, character_id, title, period_kind, clear_minutes, reward_meso,
-                 party_size, doping, memo, target_count, tags, sort_order, ${timestamp}
+                 party_size, doping, memo, target_count, tags, new_sort_order, ${timestamp}
           FROM numbered
           RETURNING *
         )

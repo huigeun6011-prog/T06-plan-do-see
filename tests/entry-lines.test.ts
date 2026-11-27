@@ -12,7 +12,7 @@ describe("pasted entry lines", () => {
       { line: 4, input: expect.objectContaining({ title: "지하수로", clear_minutes: 3, party_size: 1, memo: "기록 / 메모" }) },
       { line: 5, input: {
         title: "단독", clear_minutes: 1, party_size: 1, memo: "", tags: ["boss"], period_kind: "weekly",
-        character_id: "17", reward_meso: "0", doping: "base", target_count: 1, sort_order: 0,
+        character_id: "17", reward_meso: "0", doping: "base", target_count: 1,
       } },
     ]);
   });

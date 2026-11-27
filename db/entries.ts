@@ -34,7 +34,11 @@ export async function createEntry(sql: SqlClient, input: EntryInput): Promise<En
                          reward_meso, party_size, doping, memo, target_count, tags, sort_order)
       SELECT n.id, n.id, ${entry.character_id}, ${entry.title}, ${entry.period_kind},
              ${entry.clear_minutes}, ${entry.reward_meso}, ${entry.party_size}, ${entry.doping},
-             ${entry.memo}, ${entry.target_count}, ${entry.tags}, ${entry.sort_order}
+             ${entry.memo}, ${entry.target_count}, ${entry.tags},
+             COALESCE(${input.sort_order === undefined ? null : entry.sort_order}::int, (
+               SELECT LEAST(COALESCE(max(sort_order)::bigint + 1, 0), 2147483647)
+               FROM entry WHERE use_yn = 'Y' AND character_id IS NOT DISTINCT FROM ${entry.character_id}::bigint
+             ))
       FROM n
       RETURNING *
     ` as EntryRow[];

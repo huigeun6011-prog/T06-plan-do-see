@@ -51,7 +51,7 @@ export function parseEntryLines(text: string, defaults: EntryLineDefaults): Entr
       if (!title) throw new ValidationError("title", "Enter a title.");
       if (titles.has(title)) throw new ValidationError("title", "This title appears on an earlier line.");
       titles.add(title);
-      const input = validateEntry({
+      const { sort_order: _defaultOrder, ...input } = validateEntry({
         title,
         clear_minutes: parseNumber(minutes.trim().replace(/\s*분$/, ""), "clear_minutes"),
         party_size: party.trim() ? parseNumber(party.trim(), "party_size") : 1,
