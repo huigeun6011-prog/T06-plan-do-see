@@ -47,3 +47,13 @@
 @media (max-width: 480px) {
   .pd-rowmeta { white-space: normal; flex-wrap: wrap; }
 }
+
+.pd-lab { display: flex; align-items: center; gap: 4px; flex: 1 1 80px; }
+.pd-picker { display: grid; gap: 8px; }
+.pd-pickrows { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.pd-pickrow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; --pd-icon: 32px; }
+.pd-pickname { min-width: 4em; overflow-wrap: anywhere; }
+.pd-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.pd-pickform { align-items: center; }
+.pd-pickchip { min-height: 44px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); font-size: .85rem; }
+.pd-pickchip[aria-pressed="true"] { border-color: var(--done); }

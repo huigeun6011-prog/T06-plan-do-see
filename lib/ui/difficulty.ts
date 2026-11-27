@@ -4,6 +4,7 @@ export type Tone = "gray" | "teal" | "pink" | "dark" | "red";
 const LEVELS: Record<string, { letter: string; tone: Tone }> = {
   이지: { letter: "E", tone: "gray" },
   노말: { letter: "N", tone: "teal" },
+  노멀: { letter: "N", tone: "teal" }, // spelling used by data/boss-catalog.csv
   하드: { letter: "H", tone: "pink" },
   카오스: { letter: "C", tone: "dark" },
   익스트림: { letter: "X", tone: "red" },

@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { parseCatalog, type CatalogRow } from "../../lib/catalog";
 import { connectDatabase } from "../../db/client";
 import { loadRegistration } from "../../db/register";
 import { Section } from "../components/Shell";
@@ -17,5 +20,9 @@ export default async function RegisterPage() {
       </Section>
     );
   }
-  return <RegisterView data={data} />;
+  let catalogRows: CatalogRow[] = [];
+  try {
+    catalogRows = parseCatalog(readFileSync(join(process.cwd(), "data", "boss-catalog.csv"), "utf8"));
+  } catch {} // without a catalog the typed boss form is used
+  return <RegisterView data={data} catalogRows={catalogRows} />;
 }
