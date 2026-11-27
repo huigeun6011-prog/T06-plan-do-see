@@ -1,0 +1,30 @@
+/* This-week screen; everything scoped under .pd. Tokens and tile look come from ../preview/preview.css. */
+.pd-notice { max-width: var(--pd-max, 960px); margin: 0 auto; padding: 12px 16px 0; color: var(--dim); font-size: .85rem; overflow-wrap: anywhere; }
+.pd-nav { display: flex; gap: 8px; margin-right: auto; }
+.pd-link { display: inline-flex; align-items: center; text-decoration: none; }
+.pd-link[aria-current="page"] { border-color: var(--fg); }
+.pd-link:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.pd a { color: inherit; }
+.pd-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+.pd-strip { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+
+.pd-wrowbox { display: grid; gap: 8px; }
+.pd-wrow { display: flex; flex-wrap: wrap; gap: 6px; align-items: flex-start; }
+.pd-wtile { flex: 1 1 0; min-width: 52px; max-width: 72px; display: grid; gap: 4px; }
+.pd-wtile .pd-tile { min-width: 0; width: 100%; padding: 6px 2px; --pd-icon: 40px; }
+@media (min-width: 900px) {
+  .pd-wrow { flex-wrap: nowrap; }
+}
+
+.pd-chipbtn { min-height: 44px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); font-size: .8rem; font-variant-numeric: tabular-nums; }
+.pd-minform { display: grid; gap: 4px; }
+.pd-minform input { min-width: 0; width: 100%; min-height: 44px; box-sizing: border-box; border-radius: 999px; border: 1px solid var(--line); background: var(--tile); color: inherit; font: inherit; padding: 0 8px; }
+.pd-minform input[aria-invalid="true"] { border-color: var(--err, #b3261e); }
+.pd-minform .pd-sq { min-width: 0; width: 100%; }
+
+.pd-boxes { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.pd-boxlist { display: flex; gap: 6px; flex-wrap: wrap; }
+.pd-box { width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--line); background: var(--tile); }
+.pd-box[data-state="filled"] { background: var(--done); border-color: var(--done); }
+.pd-box[data-state="locked"] { background: var(--line); border-style: dashed; cursor: default; }
