@@ -1,9 +1,14 @@
 "use client";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { THEME_KEY, THEME_SCRIPT, otherTheme, resolveTheme, type Theme } from "../../lib/ui/theme";
 
-export function Shell({ children }: { children: ReactNode }) {
+const NAV: [string, string][] = [["/", "주간"], ["/register", "등록"]];
+
+export function Shell({ children, wide, notice }: { children: ReactNode; wide?: boolean; notice?: string }) {
   const root = useRef<HTMLDivElement>(null);
+  const path = usePathname();
   const [theme, setTheme] = useState<Theme | null>(null);
   const [names, setNames] = useState(true);
 
@@ -36,9 +41,15 @@ export function Shell({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div ref={root} className="pd" lang="ko" data-names={names ? "on" : "off"} suppressHydrationWarning>
+    <div ref={root} className="pd" lang="ko" data-names={names ? "on" : "off"} data-wide={wide ? "true" : undefined} suppressHydrationWarning>
       <script>{THEME_SCRIPT}</script>
+      {notice && <p className="pd-notice">{notice}</p>}
       <header className="pd-bar">
+        <nav className="pd-nav" aria-label="메뉴">
+          {NAV.map(([href, label]) => (
+            <Link key={href} href={href} className="pd-pill pd-link" aria-current={path === href ? "page" : undefined}>{label}</Link>
+          ))}
+        </nav>
         <button type="button" className="pd-pill" aria-pressed={names} aria-label="이름 표시" onClick={() => setNames(!names)}>
           Aa
         </button>

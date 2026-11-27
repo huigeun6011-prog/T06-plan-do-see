@@ -1,37 +1,28 @@
-import { listNotes } from "../db/ping";
-import { MAX_NOTE_LENGTH } from "./note";
+import { connectDatabase } from "../db/client";
+import { loadWeek } from "../db/week";
+import { Section, Shell } from "./components/Shell";
+import "./preview/preview.css";
+import "./week/week.css";
+import type { WeekData } from "./week/types";
+import { WeekView } from "./week/WeekView";
+import { NOTICE } from "../lib/ui/week-ui";
 
 export const dynamic = "force-dynamic";
 
-export default async function Home({
-  searchParams,
-}: {
-  searchParams: Promise<{ error?: string }>;
-}) {
-  const { error } = await searchParams;
-  const notes = await listNotes().catch(() => {
-    throw new Error("Could not read notes.");
-  });
-
+export default async function Home() {
+  let data: WeekData | null = null;
+  try {
+    data = await loadWeek(connectDatabase(), new Date());
+  } catch {}
   return (
-    <main>
-      <h1>Database connection check</h1>
-      <form action="/ping" method="post">
-        <label htmlFor="note">Public test note</label>
-        <input id="note" name="note" maxLength={MAX_NOTE_LENGTH} required />
-        {error === "note" && (
-          <p role="alert">Enter a note between 1 and {MAX_NOTE_LENGTH} characters.</p>
-        )}
-        <button type="submit">Save note</button>
-      </form>
-      <h2>Latest 10 notes</h2>
-      {notes.length ? (
-        <ol>
-          {notes.map(({ id, note }) => <li key={id}>{note}</li>)}
-        </ol>
+    <Shell wide notice={NOTICE}>
+      {data ? (
+        <WeekView data={data} />
       ) : (
-        <p>No notes yet.</p>
+        <Section no="01" title="오류">
+          <p role="alert">불러오지 못했습니다. 새로고침하세요.</p>
+        </Section>
       )}
-    </main>
+    </Shell>
   );
 }

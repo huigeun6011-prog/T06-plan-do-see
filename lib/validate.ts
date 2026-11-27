@@ -227,9 +227,16 @@ export type RunDetails = {
 
 export type CompleteTodoInput = Partial<RunDetails> & { units?: number };
 
+export function validateRunMinutes(value: unknown): number | null {
+  return value === null ? null : integer(value, "actual_minutes", 0, 10000);
+}
+
+export function validateUnitsToday(value: unknown): number {
+  return integer(value, "units", 0, 1000);
+}
+
 export function validateRunDetails(input: RunDetails): RunDetails {
-  const actual_minutes = input.actual_minutes === null
-    ? null : integer(input.actual_minutes, "actual_minutes", 0, 10000);
+  const actual_minutes = validateRunMinutes(input.actual_minutes);
   const started_at = input.started_at === null ? null : validateDate(input.started_at, "started_at");
   const ended_at = input.ended_at === null ? null : validateDate(input.ended_at, "ended_at");
   if (started_at && ended_at && ended_at < started_at) {
