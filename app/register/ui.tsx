@@ -5,6 +5,7 @@ import { difficultyBadge, displayName } from "../../lib/ui/difficulty";
 import { formatMeso, parseMeso } from "../../lib/ui/meso";
 import { koMessage } from "../../lib/ui/messages";
 import { buildEntryInput, canRegister, isConflict, sameSnapshot, type Snapshot } from "../../lib/ui/register-logic";
+import { entryKind } from "../../lib/limits";
 import { IconTile } from "../components/IconTile";
 import { addEntryAction, commitEntryLinesAction, previewEntryLinesAction, removeEntryAction, saveEntryAction } from "./actions";
 import type { EntryInput, EntryKind, EntryLineError, EntryLinePreview, PeriodKind, RegistrationActionResult, RegistrationEntry } from "./types";
@@ -22,7 +23,7 @@ export function useRun() {
   };
 }
 
-export const kindOf = (e: { tags: string[] }): EntryKind => (e.tags.includes("mission") ? "mission" : "boss");
+export const kindOf = (e: { tags: string[] }): EntryKind => entryKind(e.tags);
 
 export function Err({ fail, field }: { fail: Fail | null; field?: string }) {
   if (!fail || fail.field !== field) return null;
@@ -201,13 +202,23 @@ export function Row({ entry, owner, characterId, first, last, onMove }: {
   );
 }
 
-export function GroupAdd({ kind, characterId, sortOrder, children }: { kind: EntryKind; characterId: string | null; sortOrder: number; children?: ReactNode }) {
+export function GroupAdd({ kind, characterId, sortOrder, disabled, children }: { kind: EntryKind; characterId: string | null; sortOrder: number; disabled?: boolean; children?: ReactNode }) {
   const run = useRun();
   const [adding, setAdding] = useState(false);
   return (
     <>
-      <button type="button" className="pd-sq" aria-label={`${kind === "boss" ? "보스" : "미션"} 추가`} aria-expanded={adding} onClick={() => setAdding(!adding)}>+</button>
-      {adding && (
+      <button
+        type="button"
+        className="pd-sq"
+        aria-label={disabled ? "보스 한도에 도달했습니다" : `${kind === "boss" ? "보스" : "미션"} 추가`}
+        title={disabled ? "보스 한도에 도달했습니다" : undefined}
+        aria-expanded={adding && !disabled}
+        disabled={disabled}
+        onClick={() => setAdding(!adding)}
+      >
+        +
+      </button>
+      {adding && !disabled && (
         <div className="pd-addform">
           <EntryForm kind={kind} characterId={characterId} sortOrder={sortOrder} submit={(input) => run(addEntryAction(input))} onDone={() => setAdding(false)} />
         </div>
@@ -221,10 +232,10 @@ const rowText = (r: EntryLinePreview["rows"][number]) =>
   [r.input.title, `${r.input.clear_minutes}분`, r.input.party_size > 1 ? `${r.input.party_size}인` : "", r.input.memo].filter(Boolean).join(" · ");
 const errText = (e: EntryLineError) => `${e.line ? `${e.line}줄 ` : ""}${koMessage(e.field, e.message)}`;
 
-export function PasteBox({ characterId }: { characterId: string | null }) {
+export function PasteBox({ characterId, fixedKind }: { characterId: string | null; fixedKind?: EntryKind }) {
   const run = useRun();
   const [text, setText] = useState("");
-  const [kind, setKind] = useState<EntryKind>("boss");
+  const [kind, setKind] = useState<EntryKind>(fixedKind ?? "boss");
   const [period, setPeriod] = useState<PeriodKind>("weekly");
   const [preview, setPreview] = useState<{ snap: Snapshot; rows: EntryLinePreview["rows"]; errors: EntryLineError[] } | null>(null);
   const [problem, setProblem] = useState<string[]>([]);
@@ -271,7 +282,7 @@ export function PasteBox({ characterId }: { characterId: string | null }) {
     <div className="pd-paste">
       <textarea aria-label="붙여넣기" placeholder="이름 / 분 / 인원 / 메모" rows={3} value={text} disabled={busy} onChange={(e) => setText(e.target.value)} aria-invalid={!!preview?.errors.length} />
       <div className="pd-formrow">
-        <Switch label="종류" value={kind} options={[["boss", "보스"], ["mission", "미션"]]} onChange={setKind} disabled={busy} />
+        {!fixedKind && <Switch label="종류" value={kind} options={[["boss", "보스"], ["mission", "미션"]]} onChange={setKind} disabled={busy} />}
         <Switch label="주기" value={period} options={[["weekly", "주"], ["monthly", "월"]]} onChange={setPeriod} disabled={busy} />
       </div>
       {preview && (
