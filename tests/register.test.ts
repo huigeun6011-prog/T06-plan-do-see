@@ -108,4 +108,64 @@ describe("registration services", () => {
       .toEqual([{ conflictingLines: [1], entries: [] }]);
     await expect(listEntries(sql)).resolves.toEqual(winners[0].entries);
   });
+
+  it("appends single and pasted entries after a reorder and keeps an edited entry in place", async () => {
+    const first = await createEntry(sql, { ...input, title: "First" });
+    const second = await createEntry(sql, { ...input, title: "Second" });
+    const third = await createEntry(sql, { ...input, title: "Third" });
+    await reorderEntries(sql, [third.root_id, first.root_id, second.root_id]);
+
+    const single = await createEntry(sql, { ...input, title: "Single" });
+    expect(single.sort_order).toBe(3);
+    const batch = await commitEntryLines(sql, paste("Zulu/1\nAlpha/1\nMiddle/1").reverse(), now);
+    expect(batch.entries.map(({ title, sort_order }) => [title, sort_order]))
+      .toEqual([["Zulu", 4], ["Alpha", 5], ["Middle", 6]]);
+
+    await expect(editEntry(sql, second.root_id, second.id, { ...input, title: "Edited", sort_order: 2 }))
+      .resolves.toHaveProperty("id");
+    expect((await listEntries(sql)).map(({ title, sort_order }) => [title, sort_order])).toEqual([
+      ["Third", 0], ["First", 1], ["Edited", 2], ["Single", 3],
+      ["Zulu", 4], ["Alpha", 5], ["Middle", 6],
+    ]);
+  });
+
+  it("appends by group and excludes deleted orders while preserving explicit values", async () => {
+    const a = await createCharacter(sql, "First");
+    const b = await createCharacter(sql, "Second");
+    const retired = await createEntry(sql, { ...input, title: "Old", character_id: a.id, sort_order: 100 });
+    await deleteEntry(sql, retired.root_id);
+    await createEntry(sql, { ...input, sort_order: 9 });
+    await createEntry(sql, { ...input, character_id: a.id, sort_order: 4 });
+    await expect(createEntry(sql, { ...input, character_id: b.id })).resolves.toMatchObject({ sort_order: 0 });
+
+    const batch = await commitEntryLines(sql, [
+      paste("Account/1")[0],
+      { ...paste("Next A/1", a.id)[0], line: 2 },
+      { ...paste("Next B/1", b.id)[0], line: 3 },
+      { line: 4, input: { ...input, title: "Explicit", character_id: a.id, sort_order: -4 } },
+      { ...paste("Another A/1", a.id)[0], line: 5 },
+    ], now);
+    expect(batch.entries.map(({ sort_order }) => sort_order)).toEqual([10, 5, 1, -4, 6]);
+  });
+
+  it("keeps concurrent adds after existing entries with a stable order by position and ID", async () => {
+    const existing = await createEntry(sql, { ...input, sort_order: 7 });
+    const added = await Promise.all([
+      createEntry(sql, { ...input, title: "Parallel A" }),
+      createEntry(sql, { ...input, title: "Parallel B" }),
+    ]);
+    expect(added.every(({ sort_order }) => sort_order > existing.sort_order)).toBe(true);
+    const ordered = added.sort((a, b) => a.sort_order - b.sort_order || Number(a.id) - Number(b.id));
+    await expect(listEntries(sql)).resolves.toEqual([existing, ...ordered]);
+  });
+
+  it("still appends by ID when the highest order is already the integer limit", async () => {
+    const max = 2147483647;
+    const existing = await createEntry(sql, { ...input, sort_order: max });
+    const single = await createEntry(sql, { ...input, title: "Single" });
+    const batch = await commitEntryLines(sql, paste("First/1\nSecond/1"), now);
+    const expected = [existing, single, ...batch.entries];
+    expect(expected.map(({ sort_order }) => sort_order)).toEqual([max, max, max, max]);
+    await expect(listEntries(sql)).resolves.toEqual(expected);
+  });
 });
