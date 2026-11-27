@@ -1,11 +1,12 @@
 "use client";
-import { useEffect, useState, useTransition, type FormEvent } from "react";
+import { useEffect, useRef, useState, useTransition, type FormEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { difficultyBadge, displayName } from "../../lib/ui/difficulty";
 import { formatMeso, parseMeso } from "../../lib/ui/meso";
 import { koMessage } from "../../lib/ui/messages";
+import { buildEntryInput, canRegister, isConflict, sameSnapshot, type Snapshot } from "../../lib/ui/register-logic";
 import { IconTile } from "../components/IconTile";
-import { commitEntryLinesAction, previewEntryLinesAction, removeEntryAction } from "./actions";
+import { addEntryAction, commitEntryLinesAction, previewEntryLinesAction, removeEntryAction, saveEntryAction } from "./actions";
 import type { EntryInput, EntryKind, EntryLineError, EntryLinePreview, PeriodKind, RegistrationActionResult, RegistrationEntry } from "./types";
 
 export type Fail = { field?: string; message: string };
@@ -16,7 +17,7 @@ export function useRun() {
   const [, start] = useTransition();
   return async function run<T extends object>(promise: Promise<RegistrationActionResult<T>>) {
     const result = await promise;
-    if (result.ok || /먼저 수정/.test(result.message)) start(() => router.refresh());
+    if (result.ok || isConflict(result.message)) start(() => router.refresh());
     return result;
   };
 }
@@ -30,13 +31,15 @@ export function Err({ fail, field }: { fail: Fail | null; field?: string }) {
 
 const FIELDS = ["title", "clear_minutes", "party_size", "reward_meso", "doping", "memo", "target_count"];
 
-export function EntryForm({ initial, kind, characterId, sortOrder, submit, onDone }: {
+// `initial` is the snapshot taken when editing started; its version id is the only one ever sent.
+export function EntryForm({ initial, kind, characterId, sortOrder, submit, onDone, onConflict }: {
   initial?: RegistrationEntry;
   kind: EntryKind;
   characterId: string | null;
   sortOrder: number;
   submit: (input: EntryInput) => Promise<RegistrationActionResult<object>>;
   onDone: () => void;
+  onConflict?: (message: string) => void;
 }) {
   const [v, setV] = useState({
     title: initial?.title ?? "",
@@ -58,29 +61,19 @@ export function EntryForm({ initial, kind, characterId, sortOrder, submit, onDon
     if (busy) return;
     if (meso === null) return setFail({ field: "reward_meso", message: "Invalid reward." });
     setBusy(true);
-    const tags = [...(initial?.tags ?? []).filter((t) => t !== "boss" && t !== "mission"), kind];
-    const result = await submit({
-      title: v.title,
-      period_kind: period,
-      clear_minutes: Number(v.minutes),
-      reward_meso: meso,
-      party_size: Number(v.party),
-      doping: v.doping.trim() || undefined,
-      memo: v.memo,
-      target_count: Number(v.target),
-      tags,
-      sort_order: initial?.sort_order ?? sortOrder,
-      character_id: characterId,
-    });
+    const result = await submit(
+      buildEntryInput({ original: initial, kind, characterId, sortOrder, reward: meso, fields: { ...v, period } }),
+    );
     setBusy(false);
     if (result.ok) onDone();
+    else if (isConflict(result.message) && onConflict) onConflict(result.message);
     else setFail({ field: result.field, message: result.message });
   }
 
   const inv = (f: string) => fail?.field === f;
   return (
     <form className="pd-form" onSubmit={onSubmit}>
-      <input aria-label="제목" placeholder={kind === "boss" ? "노말 진힐라" : "지하수로"} value={v.title} onChange={set("title")} aria-invalid={inv("title")} maxLength={100} />
+      <input aria-label="제목" placeholder={kind === "boss" ? "노말 진힐라" : "지하수로"} value={v.title} onChange={set("title")} aria-invalid={inv("title")} maxLength={100} autoFocus={!!initial} />
       <Err fail={fail} field="title" />
       <div className="pd-formrow">
         <input aria-label="분" placeholder="분" inputMode="numeric" value={v.minutes} onChange={set("minutes")} aria-invalid={inv("clear_minutes")} />
@@ -107,44 +100,82 @@ export function EntryForm({ initial, kind, characterId, sortOrder, submit, onDon
   );
 }
 
-export function Switch<T extends string>({ label, value, options, onChange }: {
-  label: string; value: T; options: [T, string][]; onChange: (v: T) => void;
+export function Switch<T extends string>({ label, value, options, onChange, disabled }: {
+  label: string; value: T; options: [T, string][]; onChange: (v: T) => void; disabled?: boolean;
 }) {
   return (
     <div className="pd-switch" role="group" aria-label={label}>
       {options.map(([key, text]) => (
-        <button key={key} type="button" className="pd-pill" aria-pressed={value === key} onClick={() => onChange(key)}>{text}</button>
+        <button key={key} type="button" className="pd-pill" aria-pressed={value === key} disabled={disabled} onClick={() => onChange(key)}>{text}</button>
       ))}
     </div>
   );
 }
 
-export function Row({ entry, owner, first, last, onMove, edit }: {
+export function Row({ entry, owner, characterId, first, last, onMove }: {
   entry: RegistrationEntry;
   owner: string;
+  characterId: string | null;
   first: boolean;
   last: boolean;
   onMove: (dir: -1 | 1) => void;
-  edit: (done: () => void) => React.ReactNode;
 }) {
   const run = useRun();
-  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState<RegistrationEntry | null>(null); // entry as it was when editing started
   const [confirm, setConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [fail, setFail] = useState<Fail | null>(null);
-  const mission = kindOf(entry) === "mission";
+  const mainRef = useRef<HTMLButtonElement>(null);
+  const wasEditing = useRef(false);
+  const kind = kindOf(entry);
+
+  useEffect(() => {
+    if (!draft && wasEditing.current) mainRef.current?.focus();
+    wasEditing.current = !!draft;
+  }, [draft]);
+
+  if (draft) {
+    return (
+      <li className="pd-row" data-open="true">
+        <EntryForm
+          initial={draft}
+          kind={kind}
+          characterId={characterId}
+          sortOrder={draft.sort_order}
+          submit={(input) => run(saveEntryAction(draft.root_id, draft.version_id, input))}
+          onDone={() => setDraft(null)}
+          onConflict={(message) => {
+            setDraft(null);
+            setFail({ message });
+          }}
+        />
+      </li>
+    );
+  }
+
+  const mission = kind === "mission";
   const badge = mission ? null : difficultyBadge(entry.title);
+  const name = mission ? entry.title : displayName(entry.title);
   const reward = formatMeso(entry.reward_meso);
   const label = [owner, entry.title, `${entry.clear_minutes}분`, entry.party_size > 1 ? `${entry.party_size}인` : "", entry.period_kind === "weekly" ? "주간" : "월간", reward !== "0" ? `${reward} 메소` : "", entry.memo]
     .filter(Boolean)
     .join(", ");
 
-  if (open) return <li className="pd-row" data-open="true">{edit(() => setOpen(false))}</li>;
+  async function remove() {
+    if (deleting) return;
+    setDeleting(true);
+    const r = await run(removeEntryAction(entry.root_id));
+    if (!r.ok) setFail({ field: r.field, message: r.message });
+    setDeleting(false);
+    setConfirm(false);
+  }
+
   return (
-    <li className="pd-row" data-kind={mission ? "mission" : "boss"}>
-      <button type="button" className="pd-rowmain" aria-label={`${label} (수정)`} title={label} onClick={() => setOpen(true)}>
+    <li className="pd-row" data-kind={kind}>
+      <button ref={mainRef} type="button" className="pd-rowmain" aria-label={`${label} (수정)`} title={label} onClick={() => { setFail(null); setDraft(entry); }}>
         <IconTile label={entry.title} />
         {badge ? <span className="pd-badge" data-tone={badge.tone}>{badge.letter}</span> : <span className="pd-badge pd-nobadge" aria-hidden="true" />}
-        <span className="pd-rowname">{mission ? entry.title : displayName(entry.title)}</span>
+        <span className="pd-rowname">{name}</span>
         <span className="pd-rowmeta">
           <span>{entry.clear_minutes}</span>
           {entry.party_size > 1 && <span>{entry.party_size}인</span>}
@@ -154,26 +185,15 @@ export function Row({ entry, owner, first, last, onMove, edit }: {
         {entry.memo && <span className="pd-memo">{entry.memo}</span>}
       </button>
       <span className="pd-acts">
-        <button type="button" className="pd-sq" aria-label="위로" disabled={first} onClick={() => onMove(-1)}>↑</button>
-        <button type="button" className="pd-sq" aria-label="아래로" disabled={last} onClick={() => onMove(1)}>↓</button>
+        <button type="button" className="pd-sq" aria-label={`${name} 위로`} disabled={first} onClick={() => onMove(-1)}>↑</button>
+        <button type="button" className="pd-sq" aria-label={`${name} 아래로`} disabled={last} onClick={() => onMove(1)}>↓</button>
         {confirm ? (
           <>
-            <button
-              type="button"
-              className="pd-sq pd-danger"
-              aria-label="삭제 확인"
-              onClick={async () => {
-                const r = await run(removeEntryAction(entry.root_id));
-                if (!r.ok) setFail({ field: r.field, message: r.message });
-                setConfirm(false);
-              }}
-            >
-              ✓
-            </button>
-            <button type="button" className="pd-sq" aria-label="취소" onClick={() => setConfirm(false)}>↩</button>
+            <button type="button" className="pd-sq pd-danger" aria-label={`${name} 삭제 확인`} disabled={deleting} onClick={remove}>✓</button>
+            <button type="button" className="pd-sq" aria-label={`${name} 삭제 취소`} disabled={deleting} onClick={() => setConfirm(false)}>↩</button>
           </>
         ) : (
-          <button type="button" className="pd-sq" aria-label="삭제" onClick={() => setConfirm(true)}>✕</button>
+          <button type="button" className="pd-sq" aria-label={`${name} 삭제`} onClick={() => setConfirm(true)}>✕</button>
         )}
       </span>
       {fail && <Err fail={fail} field={fail.field} />}
@@ -181,7 +201,24 @@ export function Row({ entry, owner, first, last, onMove, edit }: {
   );
 }
 
-const rowText = (r: EntryLinePreview["rows"][number]) => `${r.input.title} · ${r.input.clear_minutes}분${r.input.party_size > 1 ? ` · ${r.input.party_size}인` : ""}`;
+export function GroupAdd({ kind, characterId, sortOrder, children }: { kind: EntryKind; characterId: string | null; sortOrder: number; children?: ReactNode }) {
+  const run = useRun();
+  const [adding, setAdding] = useState(false);
+  return (
+    <>
+      <button type="button" className="pd-sq" aria-label={`${kind === "boss" ? "보스" : "미션"} 추가`} aria-expanded={adding} onClick={() => setAdding(!adding)}>+</button>
+      {adding && (
+        <div className="pd-addform">
+          <EntryForm kind={kind} characterId={characterId} sortOrder={sortOrder} submit={(input) => run(addEntryAction(input))} onDone={() => setAdding(false)} />
+        </div>
+      )}
+      {children}
+    </>
+  );
+}
+
+const rowText = (r: EntryLinePreview["rows"][number]) =>
+  [r.input.title, `${r.input.clear_minutes}분`, r.input.party_size > 1 ? `${r.input.party_size}인` : "", r.input.memo].filter(Boolean).join(" · ");
 const errText = (e: EntryLineError) => `${e.line ? `${e.line}줄 ` : ""}${koMessage(e.field, e.message)}`;
 
 export function PasteBox({ characterId }: { characterId: string | null }) {
@@ -189,32 +226,39 @@ export function PasteBox({ characterId }: { characterId: string | null }) {
   const [text, setText] = useState("");
   const [kind, setKind] = useState<EntryKind>("boss");
   const [period, setPeriod] = useState<PeriodKind>("weekly");
-  const [preview, setPreview] = useState<EntryLinePreview | null>(null);
+  const [preview, setPreview] = useState<{ snap: Snapshot; rows: EntryLinePreview["rows"]; errors: EntryLineError[] } | null>(null);
   const [problem, setProblem] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
 
+  const current: Snapshot = { text, kind, period, characterId };
+  const latest = useRef(current);
+  latest.current = current;
+
   useEffect(() => {
     if (!text.trim()) return setPreview(null);
-    let stale = false;
+    const snap: Snapshot = { text, kind, period, characterId };
     const timer = setTimeout(async () => {
-      const r = await previewEntryLinesAction(text, { kind, period_kind: period, character_id: characterId });
-      if (stale) return;
-      setPreview(r.ok ? { rows: r.rows, errors: r.errors } : { rows: [], errors: [{ line: 0, field: r.field ?? "text", message: r.message }] });
+      const r = await previewEntryLinesAction(snap.text, { kind: snap.kind, period_kind: snap.period, character_id: snap.characterId });
+      if (!sameSnapshot(snap, latest.current)) return; // out-of-order or stale response
+      setPreview(
+        r.ok ? { snap, rows: r.rows, errors: r.errors } : { snap, rows: [], errors: [{ line: 0, field: r.field ?? "text", message: r.message }] },
+      );
     }, 300);
-    return () => {
-      stale = true;
-      clearTimeout(timer);
-    };
+    return () => clearTimeout(timer);
   }, [text, kind, period, characterId]);
 
   async function commit() {
-    if (busy) return;
+    if (busy || !preview || !canRegister(current, { snap: preview.snap, rows: preview.rows.length, errors: preview.errors.length })) return;
+    const snap = preview.snap;
     setBusy(true);
-    const r = await run(commitEntryLinesAction(text, { kind, period_kind: period, character_id: characterId }));
+    setProblem([]);
+    const r = await run(commitEntryLinesAction(snap.text, { kind: snap.kind, period_kind: snap.period, character_id: snap.characterId }));
     setBusy(false);
     if (r.ok) {
-      setText("");
-      setProblem([]);
+      if (sameSnapshot(latest.current, snap)) {
+        setText("");
+        setPreview(null);
+      }
     } else if (r.conflictingLines?.length) {
       setProblem(r.conflictingLines.map((l) => `${l}줄 ${koMessage("title", "already exists")}`));
     } else {
@@ -222,13 +266,13 @@ export function PasteBox({ characterId }: { characterId: string | null }) {
     }
   }
 
-  const ok = !!preview && preview.rows.length > 0 && preview.errors.length === 0;
+  const ready = !!preview && canRegister(current, { snap: preview.snap, rows: preview.rows.length, errors: preview.errors.length });
   return (
     <div className="pd-paste">
-      <textarea aria-label="붙여넣기" placeholder="이름 / 분 / 인원 / 메모" rows={3} value={text} onChange={(e) => setText(e.target.value)} aria-invalid={!!preview?.errors.length} />
+      <textarea aria-label="붙여넣기" placeholder="이름 / 분 / 인원 / 메모" rows={3} value={text} disabled={busy} onChange={(e) => setText(e.target.value)} aria-invalid={!!preview?.errors.length} />
       <div className="pd-formrow">
-        <Switch label="종류" value={kind} options={[["boss", "보스"], ["mission", "미션"]]} onChange={setKind} />
-        <Switch label="주기" value={period} options={[["weekly", "주"], ["monthly", "월"]]} onChange={setPeriod} />
+        <Switch label="종류" value={kind} options={[["boss", "보스"], ["mission", "미션"]]} onChange={setKind} disabled={busy} />
+        <Switch label="주기" value={period} options={[["weekly", "주"], ["monthly", "월"]]} onChange={setPeriod} disabled={busy} />
       </div>
       {preview && (
         <ul className="pd-previewlist" aria-live="polite">
@@ -241,7 +285,7 @@ export function PasteBox({ characterId }: { characterId: string | null }) {
           {problem.map((p, i) => <li key={i} className="pd-err">{p}</li>)}
         </ul>
       )}
-      <button type="button" className="pd-pill" disabled={!ok || busy} onClick={commit}>등록</button>
+      <button type="button" className="pd-pill" disabled={!ready || busy} onClick={commit}>등록</button>
     </div>
   );
 }

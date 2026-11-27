@@ -1,7 +1,8 @@
 "use client";
-import { useState, type FormEvent } from "react";
-import { addCharacterAction, addEntryAction, renameCharacterAction, reorderCharactersAction, reorderEntriesAction, saveEntryAction } from "./actions";
-import { EntryForm, Err, PasteBox, Row, kindOf, useRun, type Fail } from "./ui";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { reorderGroup } from "../../lib/ui/register-logic";
+import { addCharacterAction, renameCharacterAction, reorderCharactersAction, reorderEntriesAction } from "./actions";
+import { Err, GroupAdd, PasteBox, Row, kindOf, useRun, type Fail } from "./ui";
 import type { EntryKind, RegistrationCharacterGroup, RegistrationData, RegistrationEntry } from "./types";
 import { IconTile } from "../components/IconTile";
 import { Section } from "../components/Shell";
@@ -9,64 +10,11 @@ import { Section } from "../components/Shell";
 const GROUPS: [EntryKind, string][] = [["boss", "보스"], ["mission", "미션"]];
 const pad = (n: number) => String(n).padStart(2, "0");
 
-function Group({ kind, title, group, characterId, owner }: {
-  kind: EntryKind;
-  title: string;
-  group: { entries: RegistrationEntry[] };
-  characterId: string | null;
-  owner: string;
-}) {
-  const run = useRun();
-  const [adding, setAdding] = useState(false);
-  const [fail, setFail] = useState<Fail | null>(null);
-  const all = group.entries;
-  const mine = all.filter((e) => kindOf(e) === kind);
-  const rest = all.filter((e) => kindOf(e) !== kind);
-  const nextOrder = all.reduce((m, e) => Math.max(m, e.sort_order + 1), 0);
-
-  async function move(index: number, dir: -1 | 1) {
-    const next = [...mine];
-    [next[index], next[index + dir]] = [next[index + dir], next[index]];
-    // The full order of this character's entries: the group moved, the other group kept as is.
-    const ids = (kind === "boss" ? [...next, ...rest] : [...rest, ...next]).map((e) => e.root_id);
-    const r = await run(reorderEntriesAction(ids));
-    setFail(r.ok ? null : { field: r.field, message: r.message });
-  }
-
-  return (
-    <div className="pd-group" data-kind={kind}>
-      <div className="pd-grouphead">
-        <span className="pd-dim">{title}</span>
-        <button type="button" className="pd-sq" aria-label={`${title} 추가`} aria-expanded={adding} onClick={() => setAdding(!adding)}>+</button>
-      </div>
-      {adding && (
-        <EntryForm kind={kind} characterId={characterId} sortOrder={nextOrder} submit={(input) => run(addEntryAction(input))} onDone={() => setAdding(false)} />
-      )}
-      <ul className="pd-rows">
-        {mine.map((e, i) => (
-          <Row
-            key={e.root_id}
-            entry={e}
-            owner={owner}
-            first={i === 0}
-            last={i === mine.length - 1}
-            onMove={(d) => move(i, d)}
-            edit={(done) => (
-              <EntryForm initial={e} kind={kind} characterId={characterId} sortOrder={e.sort_order} submit={(input) => run(saveEntryAction(e.root_id, e.version_id, input))} onDone={done} />
-            )}
-          />
-        ))}
-      </ul>
-      <Err fail={fail} field={fail?.field} />
-    </div>
-  );
-}
-
-function CharacterCard({ no, owner, characterId, group, index, total, onMove }: {
+function CharacterCard({ no, owner, characterId, entries, index, total, onMove }: {
   no: number;
   owner: string;
   characterId: string | null;
-  group: { entries: RegistrationEntry[] };
+  entries: RegistrationEntry[];
   index?: number;
   total?: number;
   onMove?: (dir: -1 | 1) => void;
@@ -75,6 +23,43 @@ function CharacterCard({ no, owner, characterId, group, index, total, onMove }: 
   const [renaming, setRenaming] = useState(false);
   const [name, setName] = useState(owner);
   const [fail, setFail] = useState<Fail | null>(null);
+  const [moveFail, setMoveFail] = useState<Fail | null>(null);
+
+  // Local order (root ids) so rapid moves build on the latest state; requests are queued so a later one never undoes an earlier one.
+  const serverIds = entries.map((e) => e.root_id);
+  const serverKey = serverIds.join(",");
+  const [order, setOrder] = useState<string[] | null>(null);
+  const latest = useRef(serverIds);
+  const pending = useRef(0);
+  const queue = useRef<Promise<void>>(Promise.resolve());
+  useEffect(() => {
+    if (pending.current === 0) {
+      setOrder(null);
+      latest.current = serverIds;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serverKey]);
+
+  const byId = new Map(entries.map((e) => [e.root_id, e]));
+  const shown = (order ?? serverIds).map((id) => byId.get(id)).filter((e): e is RegistrationEntry => !!e);
+
+  function move(id: string, delta: -1 | 1) {
+    const items = latest.current.flatMap((i) => (byId.has(i) ? [{ id: i, kind: kindOf(byId.get(i)!) }] : []));
+    const next = reorderGroup(items, id, delta);
+    if (next.join(",") === items.map((x) => x.id).join(",")) return;
+    latest.current = next;
+    setOrder(next);
+    pending.current++;
+    queue.current = queue.current.then(async () => {
+      const r = await run(reorderEntriesAction(next));
+      pending.current--;
+      setMoveFail(r.ok ? null : { field: r.field, message: r.message });
+      if (!r.ok && pending.current === 0) {
+        setOrder(null);
+        latest.current = serverIds;
+      }
+    });
+  }
 
   async function rename(e: FormEvent) {
     e.preventDefault();
@@ -83,6 +68,7 @@ function CharacterCard({ no, owner, characterId, group, index, total, onMove }: 
     else setFail({ field: r.field, message: r.message });
   }
 
+  const nextOrder = entries.reduce((m, e) => Math.max(m, e.sort_order + 1), 0);
   return (
     <section className="pd-card" aria-label={owner}>
       <div className="pd-reghead">
@@ -100,15 +86,29 @@ function CharacterCard({ no, owner, characterId, group, index, total, onMove }: 
         )}
         {onMove && (
           <span className="pd-acts">
-            <button type="button" className="pd-sq" aria-label="위로" disabled={index === 0} onClick={() => onMove(-1)}>↑</button>
-            <button type="button" className="pd-sq" aria-label="아래로" disabled={index === total! - 1} onClick={() => onMove(1)}>↓</button>
+            <button type="button" className="pd-sq" aria-label={`${owner} 위로`} disabled={index === 0} onClick={() => onMove(-1)}>↑</button>
+            <button type="button" className="pd-sq" aria-label={`${owner} 아래로`} disabled={index === total! - 1} onClick={() => onMove(1)}>↓</button>
           </span>
         )}
       </div>
       <Err fail={fail} field={fail?.field} />
-      {GROUPS.map(([kind, title]) => (
-        <Group key={kind} kind={kind} title={title} group={group} characterId={characterId} owner={owner} />
-      ))}
+      {GROUPS.map(([kind, title]) => {
+        const mine = shown.filter((e) => kindOf(e) === kind);
+        return (
+          <div key={kind} className="pd-group" data-kind={kind}>
+            <div className="pd-grouphead">
+              <span className="pd-dim">{title}</span>
+              <GroupAdd kind={kind} characterId={characterId} sortOrder={nextOrder} />
+            </div>
+            <ul className="pd-rows">
+              {mine.map((e, i) => (
+                <Row key={e.root_id} entry={e} owner={owner} characterId={characterId} first={i === 0} last={i === mine.length - 1} onMove={(d) => move(e.root_id, d)} />
+              ))}
+            </ul>
+          </div>
+        );
+      })}
+      <Err fail={moveFail} field={moveFail?.field} />
       <PasteBox characterId={characterId} />
     </section>
   );
@@ -151,9 +151,11 @@ export function RegisterView({ data }: { data: RegistrationData }) {
         <Err fail={fail} field={fail?.field} />
       </Section>
       {chars.map((c: RegistrationCharacterGroup, i) => (
-        <CharacterCard key={c.character.id} no={i + 2} owner={c.character.name} characterId={c.character.id} group={c} index={i} total={chars.length} onMove={(d) => moveCharacter(i, d)} />
+        <CharacterCard key={c.character.id} no={i + 2} owner={c.character.name} characterId={c.character.id} entries={c.entries} index={i} total={chars.length} onMove={(d) => moveCharacter(i, d)} />
       ))}
-      {chars.length > 0 && <CharacterCard no={chars.length + 2} owner="계정" characterId={null} group={data.account} />}
+      {(chars.length > 0 || data.account.entries.length > 0) && (
+        <CharacterCard no={chars.length + 2} owner="계정" characterId={null} entries={data.account.entries} />
+      )}
     </>
   );
 }
