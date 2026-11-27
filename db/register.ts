@@ -1,7 +1,9 @@
 import { listCharacters, type Character } from "./characters";
 import { type SqlClient, violatesConstraint } from "./client";
+import { bossLimitError, bossSlotRequests, BOSS_OVERFLOW_SQL, lockBossCharacters } from "./entry-limits";
 import { listEntries, serializeEntry, type Entry, type EntryRow } from "./entries";
 import { MAX_ENTRY_LINES, type EntryLine } from "../lib/entry-lines";
+import { MAX_WEEKLY_BOSSES_PER_CHARACTER } from "../lib/limits";
 import { validateDate, validateEntry, validateId, ValidationError } from "../lib/validate";
 
 export type RegistrationEntry = Entry & { version_id: string };
@@ -72,14 +74,16 @@ export async function commitEntryLines(sql: SqlClient, rows: EntryLine[], now: D
   if (new Set(inputs.map(({ line }) => line)).size !== inputs.length) {
     throw new ValidationError("line", "Include each line once.");
   }
+  const requests = bossSlotRequests(inputs);
 
   try {
-    // Entry writers take ROW EXCLUSIVE locks. Lock before reading conflicts so the next statement sees their commits.
-    const [, results] = await sql.transaction((tx) => [
+    // Take character locks before the table lock, matching the order used by single writes.
+    const [, , results] = await sql.transaction((tx) => [
+      lockBossCharacters(tx, requests.map(({ character_id }) => character_id)),
       tx`LOCK TABLE entry IN SHARE ROW EXCLUSIVE MODE`,
-      tx`
-        WITH inputs AS (
-          SELECT * FROM jsonb_to_recordset(${JSON.stringify(inputs)}::jsonb) AS input(
+      tx.query(`
+        WITH capacity AS (${BOSS_OVERFLOW_SQL}), inputs AS (
+          SELECT * FROM jsonb_to_recordset($3::jsonb) AS input(
             line int, character_id bigint, title text, period_kind text, clear_minutes int,
             reward_meso bigint, party_size int, doping text, memo text, target_count int, tags text[], sort_order int
           )
@@ -99,23 +103,27 @@ export async function commitEntryLines(sql: SqlClient, rows: EntryLine[], now: D
               + count(*) FILTER (WHERE i.sort_order IS NULL) OVER (PARTITION BY i.character_id ORDER BY i.line) - 1,
               2147483647
             )) AS new_sort_order
-          FROM inputs i WHERE NOT EXISTS (SELECT 1 FROM conflicts) ORDER BY i.line
+          FROM inputs i
+          WHERE NOT EXISTS (SELECT 1 FROM conflicts) AND NOT EXISTS (SELECT 1 FROM capacity)
+          ORDER BY i.line
         ), inserted AS (
           INSERT INTO entry (id, root_id, character_id, title, period_kind, clear_minutes, reward_meso,
                              party_size, doping, memo, target_count, tags, sort_order, created_at)
           SELECT id, id, character_id, title, period_kind, clear_minutes, reward_meso,
-                 party_size, doping, memo, target_count, tags, new_sort_order, ${timestamp}
+                 party_size, doping, memo, target_count, tags, new_sort_order, $4::timestamptz
           FROM numbered
           RETURNING *
         )
-        SELECT conflicts.line AS conflict_line, inserted.*
-        FROM inserted FULL JOIN conflicts ON false
+        SELECT conflicts.line AS conflict_line, capacity.remaining, inserted.*
+        FROM inserted FULL JOIN conflicts ON false FULL JOIN capacity ON false
         ORDER BY inserted.id, conflicts.line
-      `,
+      `, [JSON.stringify(requests), MAX_WEEKLY_BOSSES_PER_CHARACTER, JSON.stringify(inputs), timestamp]),
     ], { isolationLevel: "ReadCommitted" });
     const entries: Entry[] = [];
     const conflictingLines: number[] = [];
-    for (const { conflict_line, ...row } of results as (EntryRow & { conflict_line: number | null })[]) {
+    for (const { conflict_line, remaining, ...row } of results as
+      (EntryRow & { conflict_line: number | null; remaining: number | null })[]) {
+      if (remaining !== null) throw bossLimitError(remaining);
       if (conflict_line === null) entries.push(serializeEntry(row));
       else conflictingLines.push(conflict_line);
     }

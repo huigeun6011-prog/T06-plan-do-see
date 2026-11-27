@@ -1,4 +1,5 @@
 import type { EntryInput, PeriodKind } from "../validate";
+import { MAX_WEEKLY_BOSSES_PER_CHARACTER, entryKind } from "../limits";
 
 export type Kind = "boss" | "mission";
 
@@ -61,3 +62,12 @@ export const sameSnapshot = (a: Snapshot | null, b: Snapshot | null): boolean =>
 export function canRegister(current: Snapshot, preview: { snap: Snapshot; rows: number; errors: number } | null): boolean {
   return !!preview && sameSnapshot(current, preview.snap) && preview.rows > 0 && preview.errors === 0;
 }
+
+// --- registration limits --------------------------------------------------------------------------
+
+type Counted = { tags: string[]; period_kind: PeriodKind };
+
+export const countWeeklyBosses = (entries: Counted[]): number =>
+  entries.filter((e) => entryKind(e.tags) === "boss" && e.period_kind === "weekly").length;
+
+export const canAddBoss = (entries: Counted[]): boolean => countWeeklyBosses(entries) < MAX_WEEKLY_BOSSES_PER_CHARACTER;

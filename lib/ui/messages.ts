@@ -12,6 +12,8 @@ const HINTS: Record<string, string> = {
   text: "붙여넣은 내용을 확인하세요",
   character_id: "캐릭터를 확인하세요",
   root_id: "항목을 확인하세요",
+  kind: "계정에는 미션만 등록할 수 있습니다",
+  boss_limit: "보스는 캐릭터당 최대 개수를 넘을 수 없습니다",
 };
 
 const GENERIC = "입력을 확인하세요";

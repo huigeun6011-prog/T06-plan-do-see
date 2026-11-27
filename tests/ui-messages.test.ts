@@ -3,7 +3,7 @@ import { koMessage } from "../lib/ui/messages";
 
 describe("koMessage", () => {
   it("maps known fields to Korean hints", () => {
-    for (const f of ["title", "clear_minutes", "party_size", "reward_meso", "doping", "memo", "target_count", "tags", "name", "line", "text", "character_id", "root_id"]) {
+    for (const f of ["kind", "boss_limit", "title", "clear_minutes", "party_size", "reward_meso", "doping", "memo", "target_count", "tags", "name", "line", "text", "character_id", "root_id"]) {
       const m = koMessage(f, "Use an integer from 1 to 10.");
       expect(m).toMatch(/[가-힣]/);
       expect(m).not.toMatch(/[A-Za-z]/);

@@ -19,7 +19,7 @@ const entryInput = {
   party_size: 1,
   memo: "Bring potions",
   target_count: 3,
-  tags: ["weekly", "보스"],
+  tags: ["weekly", "mission", "보스"],
 } as const;
 const weeklyEntry = { ...entryInput, tags: [...entryInput.tags] };
 const planFields = { title: "Event", priority: 1, success_criteria: "Finish", expected_minutes: 20 };

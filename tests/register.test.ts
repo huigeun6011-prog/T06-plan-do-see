@@ -6,7 +6,7 @@ import { parseEntryLines } from "../lib/entry-lines";
 import { useTestDatabase } from "./helpers/db";
 
 const now = new Date("2026-11-27T10:00:00Z");
-const input = { title: "Boss", period_kind: "weekly", clear_minutes: 2, reward_meso: 0, party_size: 1 } as const;
+const input = { title: "Boss", period_kind: "weekly" as const, clear_minutes: 2, reward_meso: 0, party_size: 1, tags: ["mission"] };
 
 describe("registration services", () => {
   const sql = useTestDatabase();

@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { reorderGroup } from "../../lib/ui/register-logic";
+import { canAddBoss, countWeeklyBosses, reorderGroup } from "../../lib/ui/register-logic";
 import { addCharacterAction, renameCharacterAction, reorderCharactersAction, reorderEntriesAction } from "./actions";
+import { MAX_WEEKLY_BOSSES_PER_CHARACTER } from "../../lib/limits";
 import { Err, GroupAdd, PasteBox, Row, kindOf, useRun, type Fail } from "./ui";
 import type { EntryKind, RegistrationCharacterGroup, RegistrationData, RegistrationEntry } from "./types";
 import { IconTile } from "../components/IconTile";
@@ -68,6 +69,7 @@ function CharacterCard({ no, owner, characterId, entries, index, total, onMove }
     else setFail({ field: r.field, message: r.message });
   }
 
+  const weekly = countWeeklyBosses(entries);
   const nextOrder = entries.reduce((m, e) => Math.max(m, e.sort_order + 1), 0);
   return (
     <section className="pd-card" aria-label={owner}>
@@ -92,13 +94,18 @@ function CharacterCard({ no, owner, characterId, entries, index, total, onMove }
         )}
       </div>
       <Err fail={fail} field={fail?.field} />
-      {GROUPS.map(([kind, title]) => {
+      {GROUPS.filter(([kind]) => characterId !== null || kind === "mission").map(([kind, title]) => {
         const mine = shown.filter((e) => kindOf(e) === kind);
         return (
           <div key={kind} className="pd-group" data-kind={kind}>
             <div className="pd-grouphead">
-              <span className="pd-dim">{title}</span>
-              <GroupAdd kind={kind} characterId={characterId} sortOrder={nextOrder} />
+              <span className="pd-dim">
+                {title}
+                {kind === "boss" && (
+                  <span className="pd-count" aria-label={`보스 ${weekly}개 중 ${MAX_WEEKLY_BOSSES_PER_CHARACTER}개`}> {weekly}/{MAX_WEEKLY_BOSSES_PER_CHARACTER}</span>
+                )}
+              </span>
+              <GroupAdd kind={kind} characterId={characterId} sortOrder={nextOrder} disabled={kind === "boss" && !canAddBoss(entries)} />
             </div>
             <ul className="pd-rows">
               {mine.map((e, i) => (
@@ -109,7 +116,7 @@ function CharacterCard({ no, owner, characterId, entries, index, total, onMove }
         );
       })}
       <Err fail={moveFail} field={moveFail?.field} />
-      <PasteBox characterId={characterId} />
+      <PasteBox characterId={characterId} fixedKind={characterId === null ? "mission" : undefined} />
     </section>
   );
 }
