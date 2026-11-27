@@ -10,7 +10,7 @@ Priorities, not tasks. Detailed work lives in `docs/plans/`. Chunk numbers refer
 
 Screens are wired to the real data one at a time; the UI profile builds the screen, the Implementer adds the server code (pages, forms, route handlers), Reviewer-Codex reviews UI diffs. The human's detail changes (see STATUS "UI feedback") go in first.
 
-- [ ] W1 registrations screen: characters, recurring bosses and missions (add, edit, delete, reorder)
+- [ ] W1 registrations screen: characters (job names), recurring bosses and missions typed by the user (add, edit, delete, reorder); proposal: a paste box where each line is `name / minutes / party / memo` with a preview, because many entries are typed at once
 - [ ] W2 this-week screen on real data (weekly plus monthly tiles, complete, undo, box editor for cumulative tiles), with the no-login notice on the first screen (T06-C82), "what is left" strip and a show-only-remaining toggle
 - [ ] W3 minutes (and later times) and miss reason input
 - [ ] W4 retro screen: numbers with drill-down, history, per-character and per-tag view, improvement line, note for ended plans without a retro
@@ -18,7 +18,6 @@ Screens are wired to the real data one at a time; the UI profile builds the scre
 - [ ] Apply the schema to production (`npm run db:apply:production`, human's OK first) before the first wired deploy
 - [ ] Chunk 11 AI recap (ADR 0005): needs the API key in the server environment; built with a fake model first
 - [ ] Doping catalog screen (user input: name, duration, meso price, coin cost), then net meso, "today" suggestion and monthly coin forecast
-- [ ] Optional game sync through the Nexon Open API (proposed, not confirmed): import characters' job names and registered bosses, mark `complete_flag` as done, show the character image; needs the key in the server environment, an ADR, a call cap and the attribution text
 
 ## Finish
 
@@ -30,7 +29,7 @@ Screens are wired to the real data one at a time; the UI profile builds the scre
 ## Later
 
 - [ ] Automatic clear-time measurement from a browser screen share (about one week; samples first, then a spike, then a full build; OCR choice gets an ADR)
-- [ ] Character images and boss icons (files from the human; decide repo versus external address; Nexon Open API key would need an ADR)
+- [ ] Character images and boss icons (on hold; files from the human, decide repo versus external address)
 
 ## Done
 
