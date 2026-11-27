@@ -1,7 +1,7 @@
 import { type SqlClient, violatesConstraint } from "./client";
 import { type EntryInput, type PeriodKind, validateEntry, validateId, validatePeriodKind, validateSortOrder, ValidationError } from "../lib/validate";
 
-type EntryRow = ReturnType<typeof validateEntry> & {
+export type EntryRow = ReturnType<typeof validateEntry> & {
   id: string;
   root_id: string;
   use_yn: "Y" | "N";
@@ -11,7 +11,7 @@ type EntryRow = ReturnType<typeof validateEntry> & {
 export type Entry = Omit<EntryRow, "created_at"> & { created_at: string };
 export type EntryEditResult = { id: string } | { conflict: true };
 
-function serialize(row: EntryRow): Entry {
+export function serializeEntry(row: EntryRow): Entry {
   return { ...row, created_at: row.created_at.toISOString() };
 }
 
@@ -34,11 +34,15 @@ export async function createEntry(sql: SqlClient, input: EntryInput): Promise<En
                          reward_meso, party_size, doping, memo, target_count, tags, sort_order)
       SELECT n.id, n.id, ${entry.character_id}, ${entry.title}, ${entry.period_kind},
              ${entry.clear_minutes}, ${entry.reward_meso}, ${entry.party_size}, ${entry.doping},
-             ${entry.memo}, ${entry.target_count}, ${entry.tags}, ${entry.sort_order}
+             ${entry.memo}, ${entry.target_count}, ${entry.tags},
+             COALESCE(${input.sort_order === undefined ? null : entry.sort_order}::int, (
+               SELECT LEAST(COALESCE(max(sort_order)::bigint + 1, 0), 2147483647)
+               FROM entry WHERE use_yn = 'Y' AND character_id IS NOT DISTINCT FROM ${entry.character_id}::bigint
+             ))
       FROM n
       RETURNING *
     ` as EntryRow[];
-    return serialize(row);
+    return serializeEntry(row);
   } catch (error) {
     throwEntryError(error);
   }
@@ -115,11 +119,11 @@ export async function listEntries(
       AND (${filters.character_id === undefined} OR character_id IS NOT DISTINCT FROM ${character}::bigint)
     ORDER BY sort_order, id
   ` as EntryRow[];
-  return rows.map(serialize);
+  return rows.map(serializeEntry);
 }
 
 export async function getEntryHistory(sql: SqlClient, rootId: string): Promise<Entry[]> {
   const root = validateId(rootId, "root_id");
   const rows = await sql`SELECT * FROM entry WHERE root_id = ${root} ORDER BY id` as EntryRow[];
-  return rows.map(serialize);
+  return rows.map(serializeEntry);
 }
