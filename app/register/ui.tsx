@@ -6,6 +6,7 @@ import { formatMeso, parseMeso } from "../../lib/ui/meso";
 import { koMessage } from "../../lib/ui/messages";
 import { buildEntryInput, canRegister, isConflict, sameSnapshot, type Snapshot } from "../../lib/ui/register-logic";
 import { entryKind } from "../../lib/limits";
+import { rewardFor, type CatalogRow } from "../../lib/catalog";
 import { IconTile } from "../components/IconTile";
 import { addEntryAction, commitEntryLinesAction, previewEntryLinesAction, removeEntryAction, saveEntryAction } from "./actions";
 import type { EntryInput, EntryKind, EntryLineError, EntryLinePreview, PeriodKind, RegistrationActionResult, RegistrationEntry } from "./types";
@@ -33,7 +34,7 @@ export function Err({ fail, field }: { fail: Fail | null; field?: string }) {
 const FIELDS = ["title", "clear_minutes", "party_size", "reward_meso", "doping", "memo", "target_count"];
 
 // `initial` is the snapshot taken when editing started; its version id is the only one ever sent.
-export function EntryForm({ initial, kind, characterId, sortOrder, submit, onDone, onConflict }: {
+export function EntryForm({ initial, kind, characterId, sortOrder, submit, onDone, onConflict, catalog }: {
   initial?: RegistrationEntry;
   kind: EntryKind;
   characterId: string | null;
@@ -41,21 +42,25 @@ export function EntryForm({ initial, kind, characterId, sortOrder, submit, onDon
   submit: (input: EntryInput) => Promise<RegistrationActionResult<object>>;
   onDone: () => void;
   onConflict?: (message: string) => void;
+  catalog?: CatalogRow; // set for catalog bosses: reward follows price / party until the human types one
 }) {
+  const auto = !!initial && !!catalog && Number(initial.reward_meso) === rewardFor(catalog.price, initial.party_size);
   const [v, setV] = useState({
     title: initial?.title ?? "",
     minutes: initial ? String(initial.clear_minutes) : "",
-    party: initial ? String(initial.party_size) : "1",
-    reward: initial && initial.reward_meso !== "0" ? String(initial.reward_meso) : "",
+    party: initial && initial.party_size > 1 ? String(initial.party_size) : "",
+    reward: initial && initial.reward_meso !== "0" && !auto ? String(initial.reward_meso) : "",
     doping: initial && initial.doping !== "base" ? initial.doping : "",
     memo: initial?.memo ?? "",
-    target: initial ? String(initial.target_count) : "1",
+    target: initial && initial.target_count > 1 ? String(initial.target_count) : "",
   });
   const [period, setPeriod] = useState<PeriodKind>(initial?.period_kind ?? "weekly");
   const [fail, setFail] = useState<Fail | null>(null);
   const [busy, setBusy] = useState(false);
   const set = (k: keyof typeof v) => (e: { target: { value: string } }) => setV({ ...v, [k]: e.target.value });
-  const meso = v.reward.trim() ? parseMeso(v.reward) : 0;
+  const partyN = v.party.trim() === "" ? 1 : Number(v.party) || 1;
+  const autoReward = catalog ? rewardFor(catalog.price, partyN) : 0;
+  const meso = v.reward.trim() ? parseMeso(v.reward) : autoReward;
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -78,14 +83,17 @@ export function EntryForm({ initial, kind, characterId, sortOrder, submit, onDon
       <Err fail={fail} field="title" />
       <div className="pd-formrow">
         <input aria-label="분" placeholder="분" inputMode="numeric" value={v.minutes} onChange={set("minutes")} aria-invalid={inv("clear_minutes")} />
-        <input aria-label="인원" placeholder="인원" inputMode="numeric" value={v.party} onChange={set("party")} aria-invalid={inv("party_size")} />
-        <input aria-label="횟수" placeholder="횟수" inputMode="numeric" value={v.target} onChange={set("target")} aria-invalid={inv("target_count")} />
+        <label className="pd-lab" title={catalog ? `최대 ${catalog.maxParty}` : undefined}>
+          <span aria-hidden="true">👥</span>
+          <input aria-label="인원" placeholder="1" inputMode="numeric" value={v.party} onChange={set("party")} aria-invalid={inv("party_size")} />
+        </label>
+        {kind === "mission" && <input aria-label="횟수" placeholder="횟수" inputMode="numeric" value={v.target} onChange={set("target")} aria-invalid={inv("target_count")} />}
       </div>
       <Err fail={fail} field="clear_minutes" />
       <Err fail={fail} field="party_size" />
       <Err fail={fail} field="target_count" />
-      <input aria-label="보상 (메소)" placeholder="보상 62억" value={v.reward} onChange={set("reward")} aria-invalid={inv("reward_meso") || meso === null} />
-      <small className="pd-dim" aria-live="polite">{meso === null ? "" : formatMeso(meso)}</small>
+      <input aria-label="보상 (메소)" placeholder={catalog ? formatMeso(autoReward) : "보상 62억"} value={v.reward} onChange={set("reward")} aria-invalid={inv("reward_meso") || meso === null} />
+      <small className="pd-dim" aria-live="polite">{meso === null || !v.reward.trim() ? "" : formatMeso(meso)}</small>
       <Err fail={fail} field="reward_meso" />
       <Switch label="주기" value={period} options={[["weekly", "주"], ["monthly", "월"]]} onChange={setPeriod} />
       <input aria-label="도핑" placeholder="도핑" value={v.doping} onChange={set("doping")} aria-invalid={inv("doping")} />
@@ -113,13 +121,14 @@ export function Switch<T extends string>({ label, value, options, onChange, disa
   );
 }
 
-export function Row({ entry, owner, characterId, first, last, onMove }: {
+export function Row({ entry, owner, characterId, first, last, onMove, catalog }: {
   entry: RegistrationEntry;
   owner: string;
   characterId: string | null;
   first: boolean;
   last: boolean;
   onMove: (dir: -1 | 1) => void;
+  catalog?: CatalogRow;
 }) {
   const run = useRun();
   const [draft, setDraft] = useState<RegistrationEntry | null>(null); // entry as it was when editing started
@@ -140,6 +149,7 @@ export function Row({ entry, owner, characterId, first, last, onMove }: {
       <li className="pd-row" data-open="true">
         <EntryForm
           initial={draft}
+          catalog={catalog}
           kind={kind}
           characterId={characterId}
           sortOrder={draft.sort_order}
@@ -202,7 +212,9 @@ export function Row({ entry, owner, characterId, first, last, onMove }: {
   );
 }
 
-export function GroupAdd({ kind, characterId, sortOrder, disabled, children }: { kind: EntryKind; characterId: string | null; sortOrder: number; disabled?: boolean; children?: ReactNode }) {
+export function GroupAdd({ kind, characterId, sortOrder, disabled, renderForm, children }: {
+  kind: EntryKind; characterId: string | null; sortOrder: number; disabled?: boolean; renderForm?: (close: () => void) => ReactNode; children?: ReactNode;
+}) {
   const run = useRun();
   const [adding, setAdding] = useState(false);
   return (
@@ -220,7 +232,9 @@ export function GroupAdd({ kind, characterId, sortOrder, disabled, children }: {
       </button>
       {adding && !disabled && (
         <div className="pd-addform">
-          <EntryForm kind={kind} characterId={characterId} sortOrder={sortOrder} submit={(input) => run(addEntryAction(input))} onDone={() => setAdding(false)} />
+          {renderForm ? renderForm(() => setAdding(false)) : (
+            <EntryForm kind={kind} characterId={characterId} sortOrder={sortOrder} submit={(input) => run(addEntryAction(input))} onDone={() => setAdding(false)} />
+          )}
         </div>
       )}
       {children}

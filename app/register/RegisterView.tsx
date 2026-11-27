@@ -1,5 +1,7 @@
 "use client";
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { findCatalogRow, groupCatalog, type CatalogBoss, type CatalogRow } from "../../lib/catalog";
+import { BossPicker } from "./BossPicker";
 import { canAddBoss, countWeeklyBosses, reorderGroup } from "../../lib/ui/register-logic";
 import { addCharacterAction, renameCharacterAction, reorderCharactersAction, reorderEntriesAction } from "./actions";
 import { MAX_WEEKLY_BOSSES_PER_CHARACTER } from "../../lib/limits";
@@ -11,7 +13,7 @@ import { Section } from "../components/Shell";
 const GROUPS: [EntryKind, string][] = [["boss", "보스"], ["mission", "미션"]];
 const pad = (n: number) => String(n).padStart(2, "0");
 
-function CharacterCard({ no, owner, characterId, entries, index, total, onMove }: {
+function CharacterCard({ no, owner, characterId, entries, index, total, onMove, catalog, catalogRows }: {
   no: number;
   owner: string;
   characterId: string | null;
@@ -19,6 +21,8 @@ function CharacterCard({ no, owner, characterId, entries, index, total, onMove }
   index?: number;
   total?: number;
   onMove?: (dir: -1 | 1) => void;
+  catalog: CatalogBoss[];
+  catalogRows: CatalogRow[];
 }) {
   const run = useRun();
   const [renaming, setRenaming] = useState(false);
@@ -105,11 +109,17 @@ function CharacterCard({ no, owner, characterId, entries, index, total, onMove }
                   <span className="pd-count" aria-label={`보스 ${weekly}개 중 ${MAX_WEEKLY_BOSSES_PER_CHARACTER}개`}> {weekly}/{MAX_WEEKLY_BOSSES_PER_CHARACTER}</span>
                 )}
               </span>
-              <GroupAdd kind={kind} characterId={characterId} sortOrder={nextOrder} disabled={kind === "boss" && !canAddBoss(entries)} />
+              <GroupAdd
+                kind={kind}
+                characterId={characterId}
+                sortOrder={nextOrder}
+                disabled={kind === "boss" && !catalog.length && !canAddBoss(entries)}
+                renderForm={kind === "boss" && catalog.length ? (close) => <BossPicker catalog={catalog} characterId={characterId} entries={entries} sortOrder={nextOrder} onClose={close} /> : undefined}
+              />
             </div>
             <ul className="pd-rows">
               {mine.map((e, i) => (
-                <Row key={e.root_id} entry={e} owner={owner} characterId={characterId} first={i === 0} last={i === mine.length - 1} onMove={(d) => move(e.root_id, d)} />
+                <Row key={e.root_id} entry={e} owner={owner} characterId={characterId} first={i === 0} last={i === mine.length - 1} onMove={(d) => move(e.root_id, d)} catalog={kind === "boss" ? findCatalogRow(catalogRows, e.title) : undefined} />
               ))}
             </ul>
           </div>
@@ -121,7 +131,8 @@ function CharacterCard({ no, owner, characterId, entries, index, total, onMove }
   );
 }
 
-export function RegisterView({ data }: { data: RegistrationData }) {
+export function RegisterView({ data, catalogRows }: { data: RegistrationData; catalogRows: CatalogRow[] }) {
+  const catalog = groupCatalog(catalogRows);
   const run = useRun();
   const [name, setName] = useState("");
   const [fail, setFail] = useState<Fail | null>(null);
@@ -158,10 +169,10 @@ export function RegisterView({ data }: { data: RegistrationData }) {
         <Err fail={fail} field={fail?.field} />
       </Section>
       {chars.map((c: RegistrationCharacterGroup, i) => (
-        <CharacterCard key={c.character.id} no={i + 2} owner={c.character.name} characterId={c.character.id} entries={c.entries} index={i} total={chars.length} onMove={(d) => moveCharacter(i, d)} />
+        <CharacterCard key={c.character.id} no={i + 2} owner={c.character.name} characterId={c.character.id} entries={c.entries} index={i} total={chars.length} onMove={(d) => moveCharacter(i, d)} catalog={catalog} catalogRows={catalogRows} />
       ))}
       {(chars.length > 0 || data.account.entries.length > 0) && (
-        <CharacterCard no={chars.length + 2} owner="계정" characterId={null} entries={data.account.entries} />
+        <CharacterCard no={chars.length + 2} owner="계정" characterId={null} entries={data.account.entries} catalog={[]} catalogRows={[]} />
       )}
     </>
   );
