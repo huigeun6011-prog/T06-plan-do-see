@@ -17,7 +17,8 @@ Screens are wired to the real data one at a time; the UI profile builds the scre
 - [ ] W5 event plans: create, missions, own retro
 - [ ] Apply the schema to production (`npm run db:apply:production`, human's OK first) before the first wired deploy
 - [ ] Chunk 11 AI recap (ADR 0005): needs the API key in the server environment; built with a fake model first
-- [ ] Doping table, net meso, "today" suggestion, monthly coin forecast (needs the doping table from the human)
+- [ ] Doping catalog screen (user input: name, duration, meso price, coin cost), then net meso, "today" suggestion and monthly coin forecast
+- [ ] Optional game sync through the Nexon Open API (proposed, not confirmed): import characters' job names and registered bosses, mark `complete_flag` as done, show the character image; needs the key in the server environment, an ADR, a call cap and the attribution text
 
 ## Finish
 
